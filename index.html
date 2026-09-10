@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Biz-Compass | 상권·입지 다차원 분석 플랫폼</title>
+  
+  <!-- CSS 라이브러리 (Leaflet & Tailwind CDN) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- JS 라이브러리 (Leaflet, Leaflet-Heat, Chart.js CDN) -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    #map { height: 100%; min-height: 520px; z-index: 1; }
+    @media print {
+      body * { visibility: hidden; }
+      #printable-area, #printable-area * { visibility: visible; }
+      #printable-area { position: absolute; left: 0; top: 0; width: 100%; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 flex flex-col h-screen overflow-hidden">
+
+  <!-- 상단 네비게이션 헤더 -->
+  <header class="no-print bg-slate-900 text-white px-5 py-2.5 flex items-center justify-between shadow-md flex-shrink-0">
+    <div class="flex items-center space-x-3">
+      <span class="bg-blue-600 text-[11px] font-bold px-2 py-0.5 rounded">엔터프라이즈 v4.5</span>
+      <h1 class="text-base font-extrabold tracking-tight">Biz-Compass <span class="text-xs text-slate-400 font-normal">| 다차원 상권·입지 분석 플랫폼</span></h1>
+    </div>
+    
+    <!-- 컨트롤 패널 -->
+    <div class="flex items-center space-x-2">
+      <!-- 행정동 폴리곤 경계 토글 -->
+      <label class="flex items-center gap-1.5 bg-slate-800 border border-slate-700 px-2 py-1 rounded cursor-pointer hover:bg-slate-700 transition">
+        <input type="checkbox" id="polygon-toggle" onchange="toggleBoundary(this.checked)" checked class="accent-indigo-500 w-3.5 h-3.5 cursor-pointer" />
+        <span class="text-xs font-bold text-indigo-300">🗺️ 행정동 구역경계</span>
+      </label>
+
+      <!-- 과밀도 히트맵 토글 -->
+      <label class="flex items-center gap-1.5 bg-slate-800 border border-slate-700 px-2 py-1 rounded cursor-pointer hover:bg-slate-700 transition">
+        <input type="checkbox" id="heatmap-toggle" onchange="toggleHeatmap(this.checked)" class="accent-rose-500 w-3.5 h-3.5 cursor-pointer" />
+        <span class="text-xs font-bold text-rose-300">🔥 히트맵</span>
+      </label>
+
+      <!-- 듀얼 상권 비교 모드 스위치 -->
+      <label class="flex items-center gap-1.5 bg-slate-800 border border-slate-700 px-2 py-1 rounded cursor-pointer hover:bg-slate-700 transition">
+        <input type="checkbox" id="compare-toggle" onchange="toggleCompareMode(this.checked)" class="accent-blue-500 w-3.5 h-3.5 cursor-pointer" />
+        <span class="text-xs font-bold text-slate-200">⚔️ 비교 (A/B)</span>
+      </label>
+
+      <span class="text-xs text-slate-400 ml-1">반경:</span>
+      <button onclick="setRadius(300)" id="btn-300" class="radius-btn px-2 py-0.5 text-xs font-semibold rounded bg-slate-700 hover:bg-slate-600 transition">300m</button>
+      <button onclick="setRadius(500)" id="btn-500" class="radius-btn px-2 py-0.5 text-xs font-semibold rounded bg-blue-600 transition">500m</button>
+      <button onclick="setRadius(1000)" id="btn-1000" class="radius-btn px-2 py-0.5 text-xs font-semibold rounded bg-slate-700 hover:bg-slate-600 transition">1km</button>
+      
+      <!-- 가중치 설정 버튼 -->
+      <button onclick="toggleWeightModal(true)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold px-2 py-1 rounded shadow transition">
+        ⚙️ 가중치
+      </button>
+
+      <!-- CSV 다운로드 버튼 -->
+      <button onclick="exportToCSV()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-2.5 py-1 rounded shadow flex items-center gap-1 transition">
+        📥 CSV
+      </button>
+
+      <!-- 인쇄 버튼 -->
+      <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-2.5 py-1 rounded shadow flex items-center gap-1 transition">
+        📄 리포트
+      </button>
+    </div>
+  </header>
+
+  <!-- 업종 필터링 및 권역 선택 서브 바 -->
+  <div class="no-print bg-white border-b border-slate-200 px-5 py-2 flex items-center justify-between text-xs shadow-sm flex-shrink-0">
+    <div class="flex items-center gap-2 overflow-x-auto">
+      <span class="font-bold text-slate-500 flex items-center gap-1">🏷️ 타깃 업종:</span>
+      <button onclick="filterCategory('ALL')" id="cat-ALL" class="cat-btn px-2.5 py-0.5 rounded-full font-bold bg-blue-50 text-blue-600 border border-blue-200">전체보기</button>
+      <button onclick="filterCategory('카페/디저트')" id="cat-카페/디저트" class="cat-btn px-2.5 py-0.5 rounded-full font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">☕ 카페/디저트</button>
+      <button onclick="filterCategory('한식')" id="cat-한식" class="cat-btn px-2.5 py-0.5 rounded-full font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">🍲 한식/식사</button>
+      <button onclick="filterCategory('패스트푸드')" id="cat-패스트푸드" class="cat-btn px-2.5 py-0.5 rounded-full font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">🍔 패스트푸드</button>
+      <button onclick="filterCategory('소매/유통')" id="cat-소매/유통" class="cat-btn px-2.5 py-0.5 rounded-full font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">🏪 소매/편의점</button>
+      <button onclick="filterCategory('일반주점/치킨')" id="cat-일반주점/치킨" class="cat-btn px-2.5 py-0.5 rounded-full font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">🍗 치킨/주점</button>
+    </div>
+
+    <!-- 바로가기 권역 셀렉트박스 -->
+    <div class="flex items-center gap-1.5 pl-3 border-l border-slate-200">
+      <span class="font-bold text-slate-500">📍 권역 이동:</span>
+      <select onchange="moveToRegion(this.value)" class="bg-slate-100 border border-slate-300 text-slate-700 rounded px-2 py-0.5 font-medium outline-none">
+        <option value="yeoksam">강남 테헤란로 (역삼역)</option>
+        <option value="gangnam">강남대로 상권 (강남역)</option>
+        <option value="seolleung">선릉 오피스 타운</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 메인 영역 (좌: 지도, 우: 대시보드) -->
+  <main class="flex flex-1 overflow-hidden">
+    
+    <!-- 좌측 인터랙티브 지도 -->
+    <section class="flex-1 relative flex flex-col">
+      <div id="map" class="flex-1"></div>
+      
+      <!-- 안내 오버레이 -->
+      <div id="guide-overlay" class="no-print absolute top-4 left-4 bg-white/95 backdrop-blur px-3.5 py-2.5 rounded-lg shadow-lg border border-slate-200 z-[1000] text-xs max-w-xs">
+        <p class="font-bold text-slate-800 mb-0.5">💡 지도 조작 가이드</p>
+        <p id="guide-text" class="text-slate-600">지도를 클릭하면 반경 내 점포 추출 및 5대 핵심 지표 다차원 레이더 차트가 자동 연산됩니다.</p>
+      </div>
+    </section>
+
+    <!-- 우측 분석 대시보드 -->
+    <aside id="printable-area" class="w-[530px] bg-white border-l border-slate-200 p-4 overflow-y-auto flex-shrink-0 flex flex-col gap-3.5 shadow-inner">
+      
+      <!-- [단일 상권 모드 뷰] -->
+      <div id="single-view" class="flex flex-col gap-3.5">
+        <div class="border-b border-slate-100 pb-2.5">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-bold text-blue-600 tracking-wider" id="target-region">서울 강남구 역삼1동 일대</span>
+            <span id="risk-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">안정 (추천)</span>
+          </div>
+          <h2 class="text-lg font-black text-slate-900" id="analysis-title">상권 다차원 정밀 진단 리포트</h2>
+          <p class="text-[11px] text-slate-500 mt-0.5" id="coordinate-info">중심 좌표: 37.5000, 127.0360 (반경 500m)</p>
+        </div>
+
+        <!-- 핵심 지표 카드 3종 -->
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
+            <p class="text-[10px] text-slate-500 font-medium">영역 내 점포 수</p>
+            <p class="text-base font-black text-blue-600 mt-0.5" id="val-stores">18개</p>
+          </div>
+          <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
+            <p class="text-[10px] text-slate-500 font-medium">일평균 유동인구</p>
+            <p class="text-base font-black text-slate-800 mt-0.5" id="val-foot">34,210명</p>
+          </div>
+          <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
+            <p class="text-[10px] text-slate-500 font-medium">종합 적합도</p>
+            <p class="text-base font-black text-emerald-600 mt-0.5" id="val-score">84점</p>
+          </div>
+        </div>
+
+        <!-- 신규 추가: 실무형 상권 경기 4대 지표 (매출/임대료/개폐업/회전율) -->
+        <div class="grid grid-cols-4 gap-1.5 text-center bg-slate-50/80 p-2.5 rounded-xl border border-slate-100">
+          <div>
+            <p class="text-[10px] text-slate-500">추정 월매출</p>
+            <p class="text-xs font-bold text-slate-900 mt-0.5" id="metric-sales">3,450만원</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500">평당 임대료</p>
+            <p class="text-xs font-bold text-slate-900 mt-0.5" id="metric-rent">18.4만원</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500">최근 폐업률</p>
+            <p class="text-xs font-bold text-rose-600 mt-0.5" id="metric-closure">2.1% (낮음)</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500">고객 체류시간</p>
+            <p class="text-xs font-bold text-indigo-600 mt-0.5" id="metric-stay">42분</p>
+          </div>
+        </div>
+
+        <!-- 5대 핵심 축 다차원 레이더 차트 -->
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+          <h3 class="text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+            <span>🕸️ 5대 상권 역량 레이더 평가</span>
+            <span class="text-[10px] text-slate-400 font-normal">100점 만점 기준</span>
+          </h3>
+          <div class="h-44 relative flex justify-center">
+            <canvas id="radarChart"></canvas>
+          </div>
+        </div>
+
+        <!-- 시간대별 유동인구 막대 차트 & 업종 도넛 차트 (2단 분할) -->
+        <div class="grid grid-cols-2 gap-2">
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+            <h3 class="text-[11px] font-bold text-slate-700 mb-1.5">📊 시간대별 유동인구</h3>
+            <div class="h-28 relative">
+              <canvas id="footTrafficChart"></canvas>
+            </div>
+          </div>
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+            <h3 class="text-[11px] font-bold text-slate-700 mb-1.5">🍩 업종 구성비</h3>
+            <div class="h-28 relative flex justify-center">
+              <canvas id="categoryChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- 반경 내 추출 점포 테이블 -->
+        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+          <div class="flex items-center justify-between mb-1.5">
+            <h3 class="text-[11px] font-bold text-slate-700">📋 반경 내 추출 점포 목록</h3>
+            <span class="text-[10px] text-slate-500" id="table-count">추출: 0개소</span>
+          </div>
+          <div class="max-h-28 overflow-y-auto border border-slate-200 rounded-lg bg-white">
+            <table class="w-full text-left text-[11px]">
+              <thead class="bg-slate-100 text-slate-600 sticky top-0 border-b border-slate-200">
+                <tr>
+                  <th class="p-1 pl-2">상호명</th>
+                  <th class="p-1">업종</th>
+                  <th class="p-1 text-right pr-2">중심거리</th>
+                </tr>
+              </thead>
+              <tbody id="store-table-body" class="divide-y divide-slate-100">
+                <!-- 동적 렌더링 영역 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- [듀얼 비교 모드 전용 뷰] -->
+      <div id="compare-view" class="hidden flex-col gap-3.5">
+        <div class="border-b border-slate-100 pb-2">
+          <span class="text-xs font-bold text-indigo-600">⚔️ 듀얼 상권 비교 분석</span>
+          <h2 class="text-base font-black text-slate-900">A후보지 vs B후보지 대조표</h2>
+        </div>
+
+        <!-- A vs B 핵심 점수 대조 카드 -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="bg-blue-50/80 border border-blue-200 p-2.5 rounded-xl text-center">
+            <span class="text-[10px] font-extrabold bg-blue-600 text-white px-2 py-0.5 rounded-full">A 상권 (파란원)</span>
+            <p class="text-xl font-black text-blue-700 mt-1.5" id="comp-score-a">84점</p>
+            <p class="text-xs font-bold text-blue-800" id="comp-badge-a">안정권</p>
+            <div class="text-[11px] text-slate-600 mt-1.5 border-t border-blue-100 pt-1 text-left space-y-0.5">
+              <div>점포 수: <b id="comp-stores-a" class="text-slate-800">18개</b></div>
+              <div>유동인구: <b id="comp-foot-a" class="text-slate-800">34,210명</b></div>
+            </div>
+          </div>
+
+          <div class="bg-amber-50/80 border border-amber-200 p-2.5 rounded-xl text-center">
+            <span class="text-[10px] font-extrabold bg-amber-500 text-white px-2 py-0.5 rounded-full">B 상권 (주황원)</span>
+            <p class="text-xl font-black text-amber-700 mt-1.5" id="comp-score-b">71점</p>
+            <p class="text-xs font-bold text-amber-800" id="comp-badge-b">보통 (과밀)</p>
+            <div class="text-[11px] text-slate-600 mt-1.5 border-t border-amber-100 pt-1 text-left space-y-0.5">
+              <div>점포 수: <b id="comp-stores-b" class="text-slate-800">29개</b></div>
+              <div>유동인구: <b id="comp-foot-b" class="text-slate-800">28,400명</b></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 비교 차트 -->
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+          <h3 class="text-xs font-bold text-slate-700 mb-1.5">📈 시간대별 유동인구 다자 비교</h3>
+          <div class="h-36 relative">
+            <canvas id="compareFootChart"></canvas>
+          </div>
+        </div>
+
+        <!-- 비교 결론 -->
+        <div class="bg-slate-100 p-2.5 rounded-lg text-xs leading-relaxed text-slate-700">
+          <p class="font-bold text-slate-900 mb-0.5">⚖️ 상권 우위 판정</p>
+          <p id="compare-verdict">
+            <b>A 상권</b>이 유동인구 규모와 경쟁 밀집도 지표에서 B 상권 대비 <b>13점 더 높은 적합도</b>를 나타내어 창업 위험도가 상대적으로 낮습니다.
+          </p>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- 가중치 튜닝 모달 -->
+  <div id="weight-modal" class="no-print hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="bg-slate-900 text-white px-5 py-3 flex items-center justify-between">
+        <h3 class="text-sm font-black flex items-center gap-1.5">⚙️ 적합도 스코어링 가중치 엔진 설정</h3>
+        <button onclick="toggleWeightModal(false)" class="text-slate-400 hover:text-white text-base font-bold">&times;</button>
+      </div>
+      
+      <div class="p-5 space-y-4 text-xs text-slate-700">
+        <p class="text-slate-500 leading-relaxed">
+          업종별 전략에 맞춰 지표 가중치를 조절하세요. 변경 즉시 레이더 차트와 스코어가 재연산됩니다.
+        </p>
+
+        <div class="space-y-1.5 bg-slate-50 p-3 rounded-lg border border-slate-200">
+          <div class="flex justify-between font-bold">
+            <span>🚶 유동인구 가산 가중치 (+)</span>
+            <span id="label-weight-foot" class="text-blue-600">40%</span>
+          </div>
+          <input type="range" id="slider-weight-foot" min="10" max="70" value="40" oninput="updateWeights()" class="w-full accent-blue-600 cursor-pointer" />
+        </div>
+
+        <div class="space-y-1.5 bg-slate-50 p-3 rounded-lg border border-slate-200">
+          <div class="flex justify-between font-bold">
+            <span>🏪 동종 점포 과밀 감점치 (-)</span>
+            <span id="label-weight-comp" class="text-rose-600">35%</span>
+          </div>
+          <input type="range" id="slider-weight-comp" min="10" max="60" value="35" oninput="updateWeights()" class="w-full accent-rose-600 cursor-pointer" />
+        </div>
+
+        <div class="space-y-1.5 bg-slate-50 p-3 rounded-lg border border-slate-200">
+          <div class="flex justify-between font-bold">
+            <span>🏢 배후 기본 안정점수</span>
+            <span id="label-weight-base" class="text-indigo-600">25점</span>
+          </div>
+          <input type="range" id="slider-weight-base" min="10" max="40" value="25" oninput="updateWeights()" class="w-full accent-indigo-600 cursor-pointer" />
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button onclick="resetWeights()" class="flex-1 bg-slate-200 hover:bg-slate-300 font-bold py-2 rounded-lg text-slate-700 transition">기본값 복원</button>
+          <button onclick="toggleWeightModal(false)" class="flex-1 bg-blue-600 hover:bg-blue-500 font-bold py-2 rounded-lg text-white transition">설정 적용 및 닫기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 1. 상태 변수
+    let isCompareMode = false;
+    let isHeatmapActive = false;
+    let isBoundaryActive = true;
+    let selectedCat = 'ALL';
+    let currentRadius = 500;
+    
+    let weightFoot = 40;
+    let weightComp = 35;
+    let weightBase = 25;
+
+    let centerA = [37.5000, 127.0360];
+    let centerB = [37.4979, 127.0276];
+    let isSettingB = false;
+
+    let currentFilteredList = [];
+
+    // Leaflet 및 Chart 객체
+    let map;
+    let circleA, markerA, circleB, markerB;
+    let markersGroup, heatLayer, boundaryLayer;
+    let footChart, catChart, compareFootChart, radarChart;
+
+    // 2. 가상 상권 데이터베이스 (다양한 역삼/강남 일대 점포)
+    const mockStores = [
+      { name: "스타벅스 테헤란점", cat: "카페/디저트", lat: 37.5008, lng: 127.0369, intensity: 0.9 },
+      { name: "블루보틀 역삼", cat: "카페/디저트", lat: 37.5015, lng: 127.0380, intensity: 0.8 },
+      { name: "이디야커피 역삼대로", cat: "카페/디저트", lat: 37.4985, lng: 127.0375, intensity: 0.7 },
+      { name: "투썸플레이스 강남역점", cat: "카페/디저트", lat: 37.4982, lng: 127.0285, intensity: 0.9 },
+      { name: "빽다방 강남대로점", cat: "카페/디저트", lat: 37.4965, lng: 127.0290, intensity: 0.7 },
+      { name: "폴바셋 역삼역점", cat: "카페/디저트", lat: 37.5010, lng: 127.0355, intensity: 0.8 },
+      { name: "할리스커피 강남점", cat: "카페/디저트", lat: 37.4990, lng: 127.0270, intensity: 0.8 },
+      { name: "역삼 찌개마을", cat: "한식", lat: 37.4990, lng: 127.0345, intensity: 0.6 },
+      { name: "강남 명동칼국수", cat: "한식", lat: 37.4972, lng: 127.0268, intensity: 0.6 },
+      { name: "역삼 한우명가", cat: "한식", lat: 37.5025, lng: 127.0392, intensity: 0.7 },
+      { name: "버거킹 역삼점", cat: "패스트푸드", lat: 37.5020, lng: 127.0350, intensity: 0.8 },
+      { name: "맥도날드 강남2호점", cat: "패스트푸드", lat: 37.4985, lng: 127.0260, intensity: 0.9 },
+      { name: "서브웨이 테헤란로", cat: "패스트푸드", lat: 37.4995, lng: 127.0380, intensity: 0.7 },
+      { name: "올리브영 역삼역점", cat: "소매/유통", lat: 37.5012, lng: 127.0378, intensity: 0.8 },
+      { name: "GS25 강남역대로점", cat: "소매/유통", lat: 37.4975, lng: 127.0295, intensity: 0.7 },
+      { name: "CU 테헤란로중앙점", cat: "소매/유통", lat: 37.5028, lng: 127.0362, intensity: 0.7 },
+      { name: "교촌치킨 역삼점", cat: "일반주점/치킨", lat: 37.4979, lng: 127.0390, intensity: 0.7 },
+      { name: "BHC치킨 강남역점", cat: "일반주점/치킨", lat: 37.4960, lng: 127.0270, intensity: 0.8 },
+      { name: "역삼 펍앤비어", cat: "일반주점/치킨", lat: 37.5005, lng: 127.0335, intensity: 0.6 }
+    ];
+
+    // 행정동 폴리곤 목업 좌표 (역삼1동 테헤란로 블록)
+    const dongBoundaryPolygon = [
+      [37.5060, 127.0310],
+      [37.5030, 127.0420],
+      [37.4940, 127.0390],
+      [37.4960, 127.0270]
+    ];
+
+    // 3. Leaflet 지도 초기화
+    function initMap() {
+      map = L.map('map').setView(centerA, 15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      markersGroup = L.layerGroup().addTo(map);
+      updateBoundaryLayer();
+      updateView();
+
+      map.on('click', function(e) {
+        if (!isCompareMode) {
+          centerA = [e.latlng.lat, e.latlng.lng];
+        } else {
+          if (!isSettingB) {
+            centerA = [e.latlng.lat, e.latlng.lng];
+            isSettingB = true;
+            document.getElementById('guide-text').innerText = "두 번째 비교 대상인 [B 상권] 위치를 지도에서 클릭하세요.";
+          } else {
+            centerB = [e.latlng.lat, e.latlng.lng];
+            isSettingB = false;
+            document.getElementById('guide-text').innerText = "비교 상권 설정 완료! 지도를 클릭하면 A 상권부터 다시 재설정됩니다.";
+          }
+        }
+        updateView();
+      });
+    }
+
+    // 권역 바로가기 이동 함수
+    function moveToRegion(val) {
+      if (val === 'yeoksam') {
+        centerA = [37.5000, 127.0360];
+      } else if (val === 'gangnam') {
+        centerA = [37.4979, 127.0276];
+      } else if (val === 'seolleung') {
+        centerA = [37.5045, 127.0490];
+      }
+      map.setView(centerA, 15);
+      updateView();
+    }
+
+    // 행정동 구역 경계 토글
+    function toggleBoundary(enabled) {
+      isBoundaryActive = enabled;
+      updateBoundaryLayer();
+    }
+
+    function updateBoundaryLayer() {
+      if (boundaryLayer) map.removeLayer(boundaryLayer);
+      if (isBoundaryActive) {
+        boundaryLayer = L.polygon(dongBoundaryPolygon, {
+          color: '#6366f1', weight: 2, dashArray: '5, 5', fillOpacity: 0.05
+        }).addTo(map).bindPopup("<b>강남구 역삼1동 행정동 경계</b>");
+      }
+    }
+
+    // 가중치 모달 제어
+    function toggleWeightModal(open) {
+      const modal = document.getElementById('weight-modal');
+      if (open) modal.classList.remove('hidden');
+      else modal.classList.add('hidden');
+    }
+
+    function updateWeights() {
+      weightFoot = parseInt(document.getElementById('slider-weight-foot').value);
+      weightComp = parseInt(document.getElementById('slider-weight-comp').value);
+      weightBase = parseInt(document.getElementById('slider-weight-base').value);
+
+      document.getElementById('label-weight-foot').innerText = `${weightFoot}%`;
+      document.getElementById('label-weight-comp').innerText = `${weightComp}%`;
+      document.getElementById('label-weight-base').innerText = `${weightBase}점`;
+
+      updateView();
+    }
+
+    function resetWeights() {
+      document.getElementById('slider-weight-foot').value = 40;
+      document.getElementById('slider-weight-comp').value = 35;
+      document.getElementById('slider-weight-base').value = 25;
+      updateWeights();
+    }
+
+    function calculateCustomScore(stores, foot) {
+      const footScore = Math.min(100, (foot / 40000) * 100);
+      const compPenalty = Math.min(100, (stores / 30) * 100);
+      const total = weightBase + (footScore * (weightFoot / 100)) - (compPenalty * (weightComp / 100));
+      return Math.min(98, Math.max(35, Math.round(total)));
+    }
+
+    // 히트맵 제어
+    function toggleHeatmap(enabled) {
+      isHeatmapActive = enabled;
+      updateHeatmapLayer();
+    }
+
+    function updateHeatmapLayer() {
+      if (heatLayer) {
+        map.removeLayer(heatLayer);
+        heatLayer = null;
+      }
+
+      if (isHeatmapActive) {
+        const heatPoints = mockStores
+          .filter(s => selectedCat === 'ALL' || s.cat === selectedCat)
+          .map(s => [s.lat, s.lng, s.intensity || 0.8]);
+
+        heatLayer = L.heatLayer(heatPoints, {
+          radius: 35, blur: 20, maxZoom: 17,
+          gradient: { 0.4: 'blue', 0.65: 'lime', 0.85: 'yellow', 1.0: 'red' }
+        }).addTo(map);
+      }
+    }
+
+    // 업종 및 반경 필터
+    function filterCategory(cat) {
+      selectedCat = cat;
+      document.querySelectorAll('.cat-btn').forEach(btn => {
+        btn.className = "cat-btn px-2.5 py-0.5 rounded-full font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition";
+      });
+      const activeBtn = document.getElementById(`cat-${cat}`);
+      if (activeBtn) {
+        activeBtn.className = "cat-btn px-2.5 py-0.5 rounded-full font-bold bg-blue-50 text-blue-600 border border-blue-200 shadow-sm transition";
+      }
+      updateView();
+    }
+
+    function setRadius(r) {
+      currentRadius = r;
+      document.querySelectorAll('.radius-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-600');
+        btn.classList.add('bg-slate-700');
+      });
+      document.getElementById(`btn-${r}`).classList.remove('bg-slate-700');
+      document.getElementById(`btn-${r}`).classList.add('bg-blue-600');
+      updateView();
+    }
+
+    // 비교 모드 토글
+    function toggleCompareMode(enabled) {
+      isCompareMode = enabled;
+      isSettingB = false;
+
+      if (enabled) {
+        document.getElementById('single-view').classList.add('hidden');
+        document.getElementById('compare-view').classList.remove('hidden');
+        document.getElementById('compare-view').classList.add('flex');
+        document.getElementById('guide-text').innerText = "비교 모드: 지도를 클릭하여 [A 상권]과 [B 상권]을 각각 지정하세요.";
+      } else {
+        document.getElementById('compare-view').classList.add('hidden');
+        document.getElementById('compare-view').classList.remove('flex');
+        document.getElementById('single-view').classList.remove('hidden');
+        document.getElementById('guide-text').innerText = "지도를 클릭하면 반경 내 선택 업종 점포만 필터링되고 입지 점수가 연산됩니다.";
+      }
+      updateView();
+    }
+
+    // 뷰 갱신
+    function updateView() {
+      if (circleA) map.removeLayer(circleA);
+      if (markerA) map.removeLayer(markerA);
+      if (circleB) map.removeLayer(circleB);
+      if (markerB) map.removeLayer(markerB);
+      markersGroup.clearLayers();
+
+      markerA = L.marker(centerA).addTo(map).bindPopup("<b>상권 A</b>").openPopup();
+      circleA = L.circle(centerA, {
+        color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.15, radius: currentRadius
+      }).addTo(map);
+
+      if (isCompareMode) {
+        markerB = L.marker(centerB).addTo(map).bindPopup("<b>상권 B</b>");
+        circleB = L.circle(centerB, {
+          color: '#d97706', fillColor: '#f59e0b', fillOpacity: 0.15, radius: currentRadius
+        }).addTo(map);
+      }
+
+      currentFilteredList = [];
+
+      mockStores.forEach(s => {
+        if (selectedCat !== 'ALL' && s.cat !== selectedCat) return;
+
+        const distA = Math.round(map.distance(centerA, [s.lat, s.lng]));
+        const inA = distA <= currentRadius;
+        const distB = isCompareMode ? Math.round(map.distance(centerB, [s.lat, s.lng])) : 999999;
+        const inB = distB <= currentRadius;
+
+        if (inA || inB) {
+          if (inA) {
+            currentFilteredList.push({ name: s.name, cat: s.cat, dist: distA, lat: s.lat, lng: s.lng });
+          }
+
+          L.circleMarker([s.lat, s.lng], {
+            radius: 6,
+            color: inA ? '#2563eb' : '#d97706',
+            fillColor: inA ? '#3b82f6' : '#f59e0b',
+            fillOpacity: 0.9
+          }).addTo(markersGroup).bindPopup(`<b>${s.name}</b><br>업종: ${s.cat}<br>거리: ${inA ? distA : distB}m`);
+        }
+      });
+
+      currentFilteredList.sort((a, b) => a.dist - b.dist);
+      updateHeatmapLayer();
+
+      if (!isCompareMode) {
+        updateSingleDashboard(centerA);
+      } else {
+        updateCompareDashboard(centerA, centerB);
+      }
+    }
+
+    // 단일 대시보드 연산 (신규 4대 지표 바인딩 포함)
+    function updateSingleDashboard(latlng) {
+      const count = currentFilteredList.length;
+      const calcStores = Math.max(count, Math.round(currentRadius * 0.03 + (latlng[0] % 0.01) * 800));
+      const calcFoot = Math.round(currentRadius * 65 + (latlng[1] % 0.01) * 35000);
+      const score = calculateCustomScore(calcStores, calcFoot);
+
+      document.getElementById('coordinate-info').innerText = `중심 좌표: ${latlng[0].toFixed(4)}, ${latlng[1].toFixed(4)} (반경 ${currentRadius}m)`;
+      document.getElementById('val-stores').innerText = `${calcStores}개`;
+      document.getElementById('val-foot').innerText = `${calcFoot.toLocaleString()}명`;
+      document.getElementById('val-score').innerText = `${score}점`;
+
+      // 신규 4대 지표 동적 연산
+      const estimatedSales = Math.round(2800 + (calcFoot / 15) - (calcStores * 12));
+      const estimatedRent = (14.5 + (calcFoot / 2500)).toFixed(1);
+      const closureRate = Math.max(1.2, (1.8 + (calcStores * 0.08) - (calcFoot / 20000))).toFixed(1);
+      const stayTime = Math.min(65, Math.round(35 + (calcFoot / 1200)));
+
+      document.getElementById('metric-sales').innerText = `${estimatedSales.toLocaleString()}만원`;
+      document.getElementById('metric-rent').innerText = `${estimatedRent}만원`;
+      document.getElementById('metric-closure').innerText = `${closureRate}%`;
+      document.getElementById('metric-stay').innerText = `${stayTime}분`;
+
+      const badge = document.getElementById('risk-badge');
+      if (score >= 80) {
+        badge.innerText = "안정 (추천)";
+        badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800";
+      } else if (score >= 60) {
+        badge.innerText = "양호 (보통)";
+        badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800";
+      } else {
+        badge.innerText = "주의 (과밀 상권)";
+        badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800";
+      }
+
+      // 테이블 렌더링
+      const tbody = document.getElementById('store-table-body');
+      tbody.innerHTML = '';
+      document.getElementById('table-count').innerText = `추출: ${count}개소`;
+
+      if (count === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="p-2 text-center text-slate-400">선택 반경 내 점포가 없습니다.</td></tr>`;
+      } else {
+        currentFilteredList.forEach(s => {
+          const tr = document.createElement('tr');
+          tr.className = "hover:bg-slate-50 transition";
+          tr.innerHTML = `
+            <td class="p-1 pl-2 font-medium text-slate-800">${s.name}</td>
+            <td class="p-1 text-slate-500">${s.cat}</td>
+            <td class="p-1 text-right pr-2 font-semibold text-blue-600">${s.dist}m</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      renderSingleCharts(calcFoot, calcStores, score);
+    }
+
+    // 비교 대시보드 연산
+    function updateCompareDashboard(latA, latB) {
+      const calcStoresA = Math.round(currentRadius * 0.03 + (latA[0] % 0.01) * 800);
+      const calcFootA = Math.round(currentRadius * 65 + (latA[1] % 0.01) * 35000);
+      const scoreA = calculateCustomScore(calcStoresA, calcFootA);
+
+      const calcStoresB = Math.round(currentRadius * 0.045 + (latB[0] % 0.01) * 950);
+      const calcFootB = Math.round(currentRadius * 58 + (latB[1] % 0.01) * 28000);
+      const scoreB = calculateCustomScore(calcStoresB, calcFootB);
+
+      document.getElementById('comp-score-a').innerText = `${scoreA}점`;
+      document.getElementById('comp-stores-a').innerText = `${calcStoresA}개`;
+      document.getElementById('comp-foot-a').innerText = `${calcFootA.toLocaleString()}명`;
+
+      document.getElementById('comp-score-b').innerText = `${scoreB}점`;
+      document.getElementById('comp-stores-b').innerText = `${calcStoresB}개`;
+      document.getElementById('comp-foot-b').innerText = `${calcFootB.toLocaleString()}명`;
+
+      const diff = scoreA - scoreB;
+      const verdict = document.getElementById('compare-verdict');
+      if (diff >= 0) {
+        verdict.innerHTML = `<b>A 상권</b>이 유동인구 규모와 경쟁 밀집도 지표에서 B 상권 대비 <b>${diff}점 더 높은 우위</b>를 기록하여 안정적인 창업 후보지로 추천됩니다.`;
+      } else {
+        verdict.innerHTML = `<b>B 상권</b>이 배후 유동 고객 흡수력에서 A 상권 대비 <b>${Math.abs(diff)}점 더 높은 우위</b>를 보이고 있습니다.`;
+      }
+
+      renderCompareCharts(calcFootA, calcFootB);
+    }
+
+    // CSV 다운로드
+    function exportToCSV() {
+      if (currentFilteredList.length === 0) {
+        alert("다운로드할 상권 점포 데이터가 없습니다. 반경을 넓히거나 다른 위치를 클릭하세요.");
+        return;
+      }
+
+      let csvContent = "\uFEFF상호명,업종대분류,중심점거리(m),위도,경도\n";
+      currentFilteredList.forEach(s => {
+        csvContent += `"${s.name}","${s.cat}",${s.dist},${s.lat},${s.lng}\n`;
+      });
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `BizCompass_상권데이터_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // 단일 차트 렌더링
+    function renderSingleCharts(baseFoot, baseStores, score) {
+      const accessibility = Math.min(95, Math.round(baseFoot / 420));
+      const customerPower = Math.min(92, Math.round(score * 0.95));
+      const stability = Math.max(45, Math.round(95 - (baseStores * 1.8)));
+      const growth = Math.min(90, Math.round(70 + (currentRadius / 40)));
+      const purchasingPower = Math.min(95, Math.round(80 + (baseFoot % 15)));
+
+      if (radarChart) radarChart.destroy();
+      const ctxRadar = document.getElementById('radarChart').getContext('2d');
+      radarChart = new Chart(ctxRadar, {
+        type: 'radar',
+        data: {
+          labels: ['접근성', '고객유입력', '입지안정성', '상권성장성', '소비구매력'],
+          datasets: [{
+            label: '상권 종합 지수',
+            data: [accessibility, customerPower, stability, growth, purchasingPower],
+            backgroundColor: 'rgba(37, 99, 235, 0.2)',
+            borderColor: '#2563eb',
+            pointBackgroundColor: '#1d4ed8',
+            pointBorderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            r: {
+              angleLines: { color: '#e2e8f0' },
+              grid: { color: '#e2e8f0' },
+              suggestedMin: 30, suggestedMax: 100,
+              ticks: { display: false }
+            }
+          }
+        }
+      });
+
+      const trafficData = [
+        Math.round(baseFoot * 0.09), Math.round(baseFoot * 0.24),
+        Math.round(baseFoot * 0.35), Math.round(baseFoot * 0.19), Math.round(baseFoot * 0.13)
+      ];
+
+      if (footChart) footChart.destroy();
+      const ctx1 = document.getElementById('footTrafficChart').getContext('2d');
+      footChart = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: ['08-11시', '11-14시', '14-17시', '17-20시', '20-23시'],
+          datasets: [{
+            label: '유동인구', data: trafficData, backgroundColor: '#3b82f6', borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { display: false }, x: { grid: { display: false } } }
+        }
+      });
+
+      if (catChart) catChart.destroy();
+      const ctx2 = document.getElementById('categoryChart').getContext('2d');
+      catChart = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: ['외식/카페', '소매/유통', '서비스/의료', '기타'],
+          datasets: [{
+            data: [45, 25, 18, 12],
+            backgroundColor: ['#2563eb', '#38bdf8', '#f59e0b', '#cbd5e1']
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'right', labels: { boxWidth: 8, font: { size: 9 } } } }
+        }
+      });
+    }
+
+    // 비교 차트 렌더링
+    function renderCompareCharts(footA, footB) {
+      const dataA = [
+        Math.round(footA * 0.09), Math.round(footA * 0.24),
+        Math.round(footA * 0.35), Math.round(footA * 0.19), Math.round(footA * 0.13)
+      ];
+      const dataB = [
+        Math.round(footB * 0.12), Math.round(footB * 0.21),
+        Math.round(footB * 0.29), Math.round(footB * 0.22), Math.round(footB * 0.16)
+      ];
+
+      if (compareFootChart) compareFootChart.destroy();
+
+      const ctx = document.getElementById('compareFootChart').getContext('2d');
+      compareFootChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['08-11시', '11-14시', '14-17시', '17-20시', '20-23시'],
+          datasets: [
+            { label: 'A 상권', data: dataA, backgroundColor: '#3b82f6', borderRadius: 4 },
+            { label: 'B 상권', data: dataB, backgroundColor: '#f59e0b', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } } },
+          scales: { y: { display: false }, x: { grid: { display: false } } }
+        }
+      });
+    }
+
+    window.onload = initMap;
+  </script>
+</body>
+</html>
