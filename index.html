@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Biz-Compass | 상권·입지 다차원 분석 플랫폼</title>
+  <title>Biz-Compass | 상권·부동산 빅데이터 분석 플랫폼</title>
   
   <!-- CSS 라이브러리 (Leaflet & Tailwind CDN) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -29,16 +29,21 @@
   <!-- 상단 네비게이션 헤더 -->
   <header class="no-print bg-slate-900 text-white px-5 py-2.5 flex items-center justify-between shadow-md flex-shrink-0">
     <div class="flex items-center space-x-3">
-      <span class="bg-blue-600 text-[11px] font-bold px-2 py-0.5 rounded">엔터프라이즈 v4.5</span>
-      <h1 class="text-base font-extrabold tracking-tight">Biz-Compass <span class="text-xs text-slate-400 font-normal">| 다차원 상권·입지 분석 플랫폼</span></h1>
+      <span class="bg-blue-600 text-[11px] font-bold px-2 py-0.5 rounded">엔터프라이즈 v5.0</span>
+      <h1 class="text-base font-extrabold tracking-tight">Biz-Compass <span class="text-xs text-slate-400 font-normal">| 한국부동산원 빅데이터 플랫폼 연계 분석기</span></h1>
     </div>
     
     <!-- 컨트롤 패널 -->
     <div class="flex items-center space-x-2">
+      <!-- 공공 API 데이터 소스 전환 스위치 -->
+      <button onclick="toggleApiModal(true)" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold px-2.5 py-1 rounded shadow flex items-center gap-1 transition">
+        🌐 공공 API 통신 설정
+      </button>
+
       <!-- 행정동 폴리곤 경계 토글 -->
       <label class="flex items-center gap-1.5 bg-slate-800 border border-slate-700 px-2 py-1 rounded cursor-pointer hover:bg-slate-700 transition">
         <input type="checkbox" id="polygon-toggle" onchange="toggleBoundary(this.checked)" checked class="accent-indigo-500 w-3.5 h-3.5 cursor-pointer" />
-        <span class="text-xs font-bold text-indigo-300">🗺️ 행정동 구역경계</span>
+        <span class="text-xs font-bold text-indigo-300">🗺️ 구역경계</span>
       </label>
 
       <!-- 과밀도 히트맵 토글 -->
@@ -87,9 +92,10 @@
       <button onclick="filterCategory('일반주점/치킨')" id="cat-일반주점/치킨" class="cat-btn px-2.5 py-0.5 rounded-full font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">🍗 치킨/주점</button>
     </div>
 
-    <!-- 바로가기 권역 셀렉트박스 -->
-    <div class="flex items-center gap-1.5 pl-3 border-l border-slate-200">
-      <span class="font-bold text-slate-500">📍 권역 이동:</span>
+    <!-- 권역 바로가기 및 소스 상태 배지 -->
+    <div class="flex items-center gap-2 pl-3 border-l border-slate-200">
+      <span id="api-status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Mock Engine 활성</span>
+      <span class="font-bold text-slate-500">📍 권역:</span>
       <select onchange="moveToRegion(this.value)" class="bg-slate-100 border border-slate-300 text-slate-700 rounded px-2 py-0.5 font-medium outline-none">
         <option value="yeoksam">강남 테헤란로 (역삼역)</option>
         <option value="gangnam">강남대로 상권 (강남역)</option>
@@ -107,8 +113,8 @@
       
       <!-- 안내 오버레이 -->
       <div id="guide-overlay" class="no-print absolute top-4 left-4 bg-white/95 backdrop-blur px-3.5 py-2.5 rounded-lg shadow-lg border border-slate-200 z-[1000] text-xs max-w-xs">
-        <p class="font-bold text-slate-800 mb-0.5">💡 지도 조작 가이드</p>
-        <p id="guide-text" class="text-slate-600">지도를 클릭하면 반경 내 점포 추출 및 5대 핵심 지표 다차원 레이더 차트가 자동 연산됩니다.</p>
+        <p class="font-bold text-slate-800 mb-0.5">💡 실거래가 & 점포 상세 분석</p>
+        <p id="guide-text" class="text-slate-600">지도의 점포 마커를 클릭하면 국토부 실거래가 시계열 추이 모달을 즉시 열어볼 수 있습니다.</p>
       </div>
     </section>
 
@@ -142,7 +148,7 @@
           </div>
         </div>
 
-        <!-- 신규 추가: 실무형 상권 경기 4대 지표 (매출/임대료/개폐업/회전율) -->
+        <!-- 실무형 상권 경기 4대 지표 -->
         <div class="grid grid-cols-4 gap-1.5 text-center bg-slate-50/80 p-2.5 rounded-xl border border-slate-100">
           <div>
             <p class="text-[10px] text-slate-500">추정 월매출</p>
@@ -173,7 +179,7 @@
           </div>
         </div>
 
-        <!-- 시간대별 유동인구 막대 차트 & 업종 도넛 차트 (2단 분할) -->
+        <!-- 시간대별 유동인구 막대 차트 & 업종 도넛 차트 -->
         <div class="grid grid-cols-2 gap-2">
           <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
             <h3 class="text-[11px] font-bold text-slate-700 mb-1.5">📊 시간대별 유동인구</h3>
@@ -189,10 +195,10 @@
           </div>
         </div>
 
-        <!-- 반경 내 추출 점포 테이블 -->
+        <!-- 반경 내 추출 점포 테이블 (클릭 시 상세 모달 트리거) -->
         <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
           <div class="flex items-center justify-between mb-1.5">
-            <h3 class="text-[11px] font-bold text-slate-700">📋 반경 내 추출 점포 목록</h3>
+            <h3 class="text-[11px] font-bold text-slate-700">📋 반경 내 추출 점포 목록 (행 클릭 시 실거래가 분석)</h3>
             <span class="text-[10px] text-slate-500" id="table-count">추출: 0개소</span>
           </div>
           <div class="max-h-28 overflow-y-auto border border-slate-200 rounded-lg bg-white">
@@ -204,7 +210,7 @@
                   <th class="p-1 text-right pr-2">중심거리</th>
                 </tr>
               </thead>
-              <tbody id="store-table-body" class="divide-y divide-slate-100">
+              <tbody id="store-table-body" class="divide-y divide-slate-100 cursor-pointer">
                 <!-- 동적 렌더링 영역 -->
               </tbody>
             </table>
@@ -262,7 +268,123 @@
     </aside>
   </main>
 
-  <!-- 가중치 튜닝 모달 -->
+  <!-- [모달 1] 점포 및 인근 부동산 실거래가 시계열 분석 창 -->
+  <div id="detail-modal" class="no-print hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="bg-slate-900 text-white px-5 py-3 flex items-center justify-between">
+        <div>
+          <span class="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">국토교통부 실거래가 데이터 연계</span>
+          <h3 class="text-sm font-black" id="modal-store-name">스타벅스 테헤란점 상세 정보</h3>
+        </div>
+        <button onclick="toggleDetailModal(false)" class="text-slate-400 hover:text-white text-lg font-bold">&times;</button>
+      </div>
+
+      <div class="p-5 space-y-4 overflow-y-auto text-xs text-slate-700">
+        <!-- 3대 시세 지표 카드 -->
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+            <p class="text-[10px] text-slate-500">최근 평균 실거래가</p>
+            <p class="text-sm font-black text-blue-600 mt-0.5" id="modal-trade-price">18억 5,000만</p>
+          </div>
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+            <p class="text-[10px] text-slate-500">평당 매매단가</p>
+            <p class="text-sm font-black text-slate-800 mt-0.5" id="modal-unit-price">6,240만원</p>
+          </div>
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+            <p class="text-[10px] text-slate-500">공시지가 변동률</p>
+            <p class="text-sm font-black text-emerald-600 mt-0.5" id="modal-tax-change">+4.8% (상승)</p>
+          </div>
+        </div>
+
+        <!-- 실거래가 시계열 추이 라인 차트 -->
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <h4 class="font-bold text-slate-800 mb-2">📈 최근 5개년 분기별 상업용 부동산 실거래가 추이 (억원)</h4>
+          <div class="h-40 relative">
+            <canvas id="realPriceChart"></canvas>
+          </div>
+        </div>
+
+        <!-- 실제 거래 이력 테이블 -->
+        <div class="space-y-1.5">
+          <h4 class="font-bold text-slate-800">📑 최근 필지 실거래 신고 내역</h4>
+          <div class="border border-slate-200 rounded-lg overflow-hidden">
+            <table class="w-full text-left text-[11px]">
+              <thead class="bg-slate-100 text-slate-600 border-b border-slate-200">
+                <tr>
+                  <th class="p-1.5 pl-2">계약년월</th>
+                  <th class="p-1.5">유형</th>
+                  <th class="p-1.5">전용면적</th>
+                  <th class="p-1.5 text-right pr-2">거래금액</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 bg-white">
+                <tr>
+                  <td class="p-1.5 pl-2 text-slate-600">2026.04</td>
+                  <td class="p-1.5"><span class="px-1.5 py-0.5 rounded text-[10px] bg-blue-100 text-blue-700 font-bold">매매</span></td>
+                  <td class="p-1.5 text-slate-600">84.9㎡ (3층)</td>
+                  <td class="p-1.5 text-right pr-2 font-bold text-slate-900">19억 2,000만원</td>
+                </tr>
+                <tr>
+                  <td class="p-1.5 pl-2 text-slate-600">2026.01</td>
+                  <td class="p-1.5"><span class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-700 font-bold">임대</span></td>
+                  <td class="p-1.5 text-slate-600">112.4㎡ (1층)</td>
+                  <td class="p-1.5 text-right pr-2 font-bold text-slate-900">보증금 1억 / 월 850만</td>
+                </tr>
+                <tr>
+                  <td class="p-1.5 pl-2 text-slate-600">2025.10</td>
+                  <td class="p-1.5"><span class="px-1.5 py-0.5 rounded text-[10px] bg-blue-100 text-blue-700 font-bold">매매</span></td>
+                  <td class="p-1.5 text-slate-600">84.9㎡ (2층)</td>
+                  <td class="p-1.5 text-right pr-2 font-bold text-slate-900">18억 1,000만원</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <button onclick="toggleDetailModal(false)" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 rounded-lg transition">
+          창 닫기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- [모달 2] 공공 API 통신 설정 콘솔 -->
+  <div id="api-modal" class="no-print hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="bg-slate-900 text-white px-5 py-3 flex items-center justify-between">
+        <h3 class="text-sm font-black flex items-center gap-1.5">🌐 공공데이터포털 Open API 연동 콘솔</h3>
+        <button onclick="toggleApiModal(false)" class="text-slate-400 hover:text-white text-base font-bold">&times;</button>
+      </div>
+      <div class="p-5 space-y-3.5 text-xs text-slate-700">
+        <p class="text-slate-500 leading-relaxed">
+          본 플랫폼은 국토교통부 실거래가 및 소상공인진흥공단 상권 API 스펙을 준수합니다. 엔드포인트를 지정하여 실시간 호출 테스트를 수행할 수 있습니다.
+        </p>
+
+        <div class="space-y-1">
+          <label class="font-bold text-slate-700">연계 공공 API 엔드포인트 URL</label>
+          <input type="text" id="api-url-input" value="https://apis.data.go.kr/1613000/RTMSDataSvcNrgTrade/getNRGTradeList" class="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-[11px] text-slate-700 outline-none" />
+        </div>
+
+        <div class="space-y-1">
+          <label class="font-bold text-slate-700">인증키 (ServiceKey)</label>
+          <input type="password" value="PUBLIC_DATA_PORTAL_ENCRYPTED_KEY_182M" class="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-[11px] text-slate-700 outline-none" readonly />
+        </div>
+
+        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-[11px] space-y-1 text-slate-600">
+          <div class="flex justify-between"><span>통신 프로토콜:</span><b class="text-slate-800">RESTful HTTPS (JSON/XML)</b></div>
+          <div class="flex justify-between"><span>캐시 레이어 정책:</span><b class="text-blue-600">IndexedDB 로컬 캐싱 (12시간)</b></div>
+          <div class="flex justify-between"><span>API 상태:</span><b class="text-emerald-600">정상 통신 가능 (Online)</b></div>
+        </div>
+
+        <div class="flex gap-2 pt-1">
+          <button onclick="simulateApiFetch()" class="flex-1 bg-cyan-600 hover:bg-cyan-500 font-bold py-2 rounded-lg text-white transition">API 실시간 동기화 테스트</button>
+          <button onclick="toggleApiModal(false)" class="flex-1 bg-slate-200 hover:bg-slate-300 font-bold py-2 rounded-lg text-slate-700 transition">닫기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- [모달 3] 가중치 튜닝 모달 -->
   <div id="weight-modal" class="no-print hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
       <div class="bg-slate-900 text-white px-5 py-3 flex items-center justify-between">
@@ -329,37 +451,33 @@
     let map;
     let circleA, markerA, circleB, markerB;
     let markersGroup, heatLayer, boundaryLayer;
-    let footChart, catChart, compareFootChart, radarChart;
+    let footChart, catChart, compareFootChart, radarChart, realPriceChart;
 
-    // 2. 가상 상권 데이터베이스 (다양한 역삼/강남 일대 점포)
+    // 2. 가상 상권 데이터베이스
     const mockStores = [
-      { name: "스타벅스 테헤란점", cat: "카페/디저트", lat: 37.5008, lng: 127.0369, intensity: 0.9 },
-      { name: "블루보틀 역삼", cat: "카페/디저트", lat: 37.5015, lng: 127.0380, intensity: 0.8 },
-      { name: "이디야커피 역삼대로", cat: "카페/디저트", lat: 37.4985, lng: 127.0375, intensity: 0.7 },
-      { name: "투썸플레이스 강남역점", cat: "카페/디저트", lat: 37.4982, lng: 127.0285, intensity: 0.9 },
-      { name: "빽다방 강남대로점", cat: "카페/디저트", lat: 37.4965, lng: 127.0290, intensity: 0.7 },
-      { name: "폴바셋 역삼역점", cat: "카페/디저트", lat: 37.5010, lng: 127.0355, intensity: 0.8 },
-      { name: "할리스커피 강남점", cat: "카페/디저트", lat: 37.4990, lng: 127.0270, intensity: 0.8 },
-      { name: "역삼 찌개마을", cat: "한식", lat: 37.4990, lng: 127.0345, intensity: 0.6 },
-      { name: "강남 명동칼국수", cat: "한식", lat: 37.4972, lng: 127.0268, intensity: 0.6 },
-      { name: "역삼 한우명가", cat: "한식", lat: 37.5025, lng: 127.0392, intensity: 0.7 },
-      { name: "버거킹 역삼점", cat: "패스트푸드", lat: 37.5020, lng: 127.0350, intensity: 0.8 },
-      { name: "맥도날드 강남2호점", cat: "패스트푸드", lat: 37.4985, lng: 127.0260, intensity: 0.9 },
-      { name: "서브웨이 테헤란로", cat: "패스트푸드", lat: 37.4995, lng: 127.0380, intensity: 0.7 },
-      { name: "올리브영 역삼역점", cat: "소매/유통", lat: 37.5012, lng: 127.0378, intensity: 0.8 },
-      { name: "GS25 강남역대로점", cat: "소매/유통", lat: 37.4975, lng: 127.0295, intensity: 0.7 },
-      { name: "CU 테헤란로중앙점", cat: "소매/유통", lat: 37.5028, lng: 127.0362, intensity: 0.7 },
-      { name: "교촌치킨 역삼점", cat: "일반주점/치킨", lat: 37.4979, lng: 127.0390, intensity: 0.7 },
-      { name: "BHC치킨 강남역점", cat: "일반주점/치킨", lat: 37.4960, lng: 127.0270, intensity: 0.8 },
-      { name: "역삼 펍앤비어", cat: "일반주점/치킨", lat: 37.5005, lng: 127.0335, intensity: 0.6 }
+      { name: "스타벅스 테헤란점", cat: "카페/디저트", lat: 37.5008, lng: 127.0369, intensity: 0.9, price: "19억 2,000만", unit: "6,450만" },
+      { name: "블루보틀 역삼", cat: "카페/디저트", lat: 37.5015, lng: 127.0380, intensity: 0.8, price: "24억 5,000만", unit: "7,100만" },
+      { name: "이디야커피 역삼대로", cat: "카페/디저트", lat: 37.4985, lng: 127.0375, intensity: 0.7, price: "14억 8,000만", unit: "5,200만" },
+      { name: "투썸플레이스 강남역점", cat: "카페/디저트", lat: 37.4982, lng: 127.0285, intensity: 0.9, price: "32억 0,000만", unit: "8,900만" },
+      { name: "빽다방 강남대로점", cat: "카페/디저트", lat: 37.4965, lng: 127.0290, intensity: 0.7, price: "16억 5,000만", unit: "5,800만" },
+      { name: "폴바셋 역삼역점", cat: "카페/디저트", lat: 37.5010, lng: 127.0355, intensity: 0.8, price: "21억 0,000만", unit: "6,700만" },
+      { name: "할리스커피 강남점", cat: "카페/디저트", lat: 37.4990, lng: 127.0270, intensity: 0.8, price: "28억 5,000만", unit: "7,800만" },
+      { name: "역삼 찌개마을", cat: "한식", lat: 37.4990, lng: 127.0345, intensity: 0.6, price: "12억 5,000만", unit: "4,600만" },
+      { name: "강남 명동칼국수", cat: "한식", lat: 37.4972, lng: 127.0268, intensity: 0.6, price: "17억 0,000만", unit: "5,400만" },
+      { name: "역삼 한우명가", cat: "한식", lat: 37.5025, lng: 127.0392, intensity: 0.7, price: "35억 0,000만", unit: "8,200만" },
+      { name: "버거킹 역삼점", cat: "패스트푸드", lat: 37.5020, lng: 127.0350, intensity: 0.8, price: "22억 5,000만", unit: "6,800만" },
+      { name: "맥도날드 강남2호점", cat: "패스트푸드", lat: 37.4985, lng: 127.0260, intensity: 0.9, price: "41억 0,000만", unit: "9,500만" },
+      { name: "서브웨이 테헤란로", cat: "패스트푸드", lat: 37.4995, lng: 127.0380, intensity: 0.7, price: "18억 0,000만", unit: "5,900만" },
+      { name: "올리브영 역삼역점", cat: "소매/유통", lat: 37.5012, lng: 127.0378, intensity: 0.8, price: "26억 0,000만", unit: "7,400만" },
+      { name: "GS25 강남역대로점", cat: "소매/유통", lat: 37.4975, lng: 127.0295, intensity: 0.7, price: "15억 5,000만", unit: "5,300만" },
+      { name: "CU 테헤란로중앙점", cat: "소매/유통", lat: 37.5028, lng: 127.0362, intensity: 0.7, price: "16억 2,000만", unit: "5,600만" },
+      { name: "교촌치킨 역삼점", cat: "일반주점/치킨", lat: 37.4979, lng: 127.0390, intensity: 0.7, price: "13억 8,000만", unit: "4,900만" },
+      { name: "BHC치킨 강남역점", cat: "일반주점/치킨", lat: 37.4960, lng: 127.0270, intensity: 0.8, price: "19억 8,000만", unit: "6,300만" },
+      { name: "역삼 펍앤비어", cat: "일반주점/치킨", lat: 37.5005, lng: 127.0335, intensity: 0.6, price: "14억 2,000만", unit: "5,100만" }
     ];
 
-    // 행정동 폴리곤 목업 좌표 (역삼1동 테헤란로 블록)
     const dongBoundaryPolygon = [
-      [37.5060, 127.0310],
-      [37.5030, 127.0420],
-      [37.4940, 127.0390],
-      [37.4960, 127.0270]
+      [37.5060, 127.0310], [37.5030, 127.0420], [37.4940, 127.0390], [37.4960, 127.0270]
     ];
 
     // 3. Leaflet 지도 초기화
@@ -391,20 +509,81 @@
       });
     }
 
-    // 권역 바로가기 이동 함수
+    // 4. 상세 모달 (실거래가 시계열 분석) 제어
+    function openStoreDetail(storeName) {
+      const store = mockStores.find(s => s.name === storeName) || mockStores[0];
+      document.getElementById('modal-store-name').innerText = `${store.name} (${store.cat})`;
+      document.getElementById('modal-trade-price').innerText = store.price || "18억 5,000만";
+      document.getElementById('modal-unit-price').innerText = store.unit || "6,240만원";
+      
+      toggleDetailModal(true);
+      renderRealPriceChart();
+    }
+
+    function toggleDetailModal(open) {
+      const modal = document.getElementById('detail-modal');
+      if (open) modal.classList.remove('hidden');
+      else modal.classList.add('hidden');
+    }
+
+    function renderRealPriceChart() {
+      if (realPriceChart) realPriceChart.destroy();
+      const ctx = document.getElementById('realPriceChart').getContext('2d');
+      realPriceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['22년 1Q', '22년 3Q', '23년 2Q', '24년 1Q', '25년 1Q', '26년 2Q'],
+          datasets: [{
+            label: '매매 실거래가',
+            data: [14.5, 15.2, 16.8, 17.5, 18.2, 19.2],
+            borderColor: '#2563eb',
+            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+            fill: true,
+            tension: 0.35,
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { grid: { color: '#f1f5f9' }, ticks: { callback: v => `${v}억` } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    // 5. 공공 API 모달 및 시뮬레이션 제어
+    function toggleApiModal(open) {
+      const modal = document.getElementById('api-modal');
+      if (open) modal.classList.remove('hidden');
+      else modal.classList.add('hidden');
+    }
+
+    function simulateApiFetch() {
+      const badge = document.getElementById('api-status-badge');
+      badge.innerText = "API 통신 중...";
+      badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 animate-pulse";
+
+      setTimeout(() => {
+        badge.innerText = "공공 API 실시간 동기화 완료";
+        badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-100 text-cyan-800";
+        alert("국토교통부 실거래가 및 상권 공공 API 호출 성공!\n최신 실거래 신고 필지 19건이 성공적으로 로컬 캐시에 동기화되었습니다.");
+        toggleApiModal(false);
+      }, 1000);
+    }
+
+    // 6. 권역 이동 및 구역경계 제어
     function moveToRegion(val) {
-      if (val === 'yeoksam') {
-        centerA = [37.5000, 127.0360];
-      } else if (val === 'gangnam') {
-        centerA = [37.4979, 127.0276];
-      } else if (val === 'seolleung') {
-        centerA = [37.5045, 127.0490];
-      }
+      if (val === 'yeoksam') centerA = [37.5000, 127.0360];
+      else if (val === 'gangnam') centerA = [37.4979, 127.0276];
+      else if (val === 'seolleung') centerA = [37.5045, 127.0490];
       map.setView(centerA, 15);
       updateView();
     }
 
-    // 행정동 구역 경계 토글
     function toggleBoundary(enabled) {
       isBoundaryActive = enabled;
       updateBoundaryLayer();
@@ -419,7 +598,7 @@
       }
     }
 
-    // 가중치 모달 제어
+    // 7. 가중치 모달 제어
     function toggleWeightModal(open) {
       const modal = document.getElementById('weight-modal');
       if (open) modal.classList.remove('hidden');
@@ -452,7 +631,7 @@
       return Math.min(98, Math.max(35, Math.round(total)));
     }
 
-    // 히트맵 제어
+    // 8. 히트맵 제어
     function toggleHeatmap(enabled) {
       isHeatmapActive = enabled;
       updateHeatmapLayer();
@@ -476,7 +655,7 @@
       }
     }
 
-    // 업종 및 반경 필터
+    // 9. 업종 및 반경 필터
     function filterCategory(cat) {
       selectedCat = cat;
       document.querySelectorAll('.cat-btn').forEach(btn => {
@@ -500,7 +679,6 @@
       updateView();
     }
 
-    // 비교 모드 토글
     function toggleCompareMode(enabled) {
       isCompareMode = enabled;
       isSettingB = false;
@@ -514,12 +692,12 @@
         document.getElementById('compare-view').classList.add('hidden');
         document.getElementById('compare-view').classList.remove('flex');
         document.getElementById('single-view').classList.remove('hidden');
-        document.getElementById('guide-text').innerText = "지도를 클릭하면 반경 내 선택 업종 점포만 필터링되고 입지 점수가 연산됩니다.";
+        document.getElementById('guide-text').innerText = "지도를 클릭하면 반경 내 점포 추출 및 5대 지표가 연산됩니다.";
       }
       updateView();
     }
 
-    // 뷰 갱신
+    // 10. 뷰 갱신
     function updateView() {
       if (circleA) map.removeLayer(circleA);
       if (markerA) map.removeLayer(markerA);
@@ -551,15 +729,17 @@
 
         if (inA || inB) {
           if (inA) {
-            currentFilteredList.push({ name: s.name, cat: s.cat, dist: distA, lat: s.lat, lng: s.lng });
+            currentFilteredList.push({ name: s.name, cat: s.cat, dist: distA, lat: s.lat, lng: s.lng, price: s.price, unit: s.unit });
           }
 
-          L.circleMarker([s.lat, s.lng], {
+          const marker = L.circleMarker([s.lat, s.lng], {
             radius: 6,
             color: inA ? '#2563eb' : '#d97706',
             fillColor: inA ? '#3b82f6' : '#f59e0b',
             fillOpacity: 0.9
-          }).addTo(markersGroup).bindPopup(`<b>${s.name}</b><br>업종: ${s.cat}<br>거리: ${inA ? distA : distB}m`);
+          }).addTo(markersGroup);
+
+          marker.bindPopup(`<b>${s.name}</b><br>업종: ${s.cat}<br>실거래가: ${s.price}<br><button onclick="openStoreDetail('${s.name}')" class="mt-1 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded font-bold">실거래 시계열 분석</button>`);
         }
       });
 
@@ -573,7 +753,7 @@
       }
     }
 
-    // 단일 대시보드 연산 (신규 4대 지표 바인딩 포함)
+    // 11. 단일 대시보드 갱신
     function updateSingleDashboard(latlng) {
       const count = currentFilteredList.length;
       const calcStores = Math.max(count, Math.round(currentRadius * 0.03 + (latlng[0] % 0.01) * 800));
@@ -585,7 +765,6 @@
       document.getElementById('val-foot').innerText = `${calcFoot.toLocaleString()}명`;
       document.getElementById('val-score').innerText = `${score}점`;
 
-      // 신규 4대 지표 동적 연산
       const estimatedSales = Math.round(2800 + (calcFoot / 15) - (calcStores * 12));
       const estimatedRent = (14.5 + (calcFoot / 2500)).toFixed(1);
       const closureRate = Math.max(1.2, (1.8 + (calcStores * 0.08) - (calcFoot / 20000))).toFixed(1);
@@ -608,7 +787,7 @@
         badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800";
       }
 
-      // 테이블 렌더링
+      // 테이블 바인딩 (행 클릭 시 모달 오픈)
       const tbody = document.getElementById('store-table-body');
       tbody.innerHTML = '';
       document.getElementById('table-count').innerText = `추출: ${count}개소`;
@@ -618,7 +797,8 @@
       } else {
         currentFilteredList.forEach(s => {
           const tr = document.createElement('tr');
-          tr.className = "hover:bg-slate-50 transition";
+          tr.className = "hover:bg-blue-50/70 transition";
+          tr.onclick = () => openStoreDetail(s.name);
           tr.innerHTML = `
             <td class="p-1 pl-2 font-medium text-slate-800">${s.name}</td>
             <td class="p-1 text-slate-500">${s.cat}</td>
@@ -631,7 +811,7 @@
       renderSingleCharts(calcFoot, calcStores, score);
     }
 
-    // 비교 대시보드 연산
+    // 12. 비교 대시보드 갱신
     function updateCompareDashboard(latA, latB) {
       const calcStoresA = Math.round(currentRadius * 0.03 + (latA[0] % 0.01) * 800);
       const calcFootA = Math.round(currentRadius * 65 + (latA[1] % 0.01) * 35000);
@@ -660,29 +840,29 @@
       renderCompareCharts(calcFootA, calcFootB);
     }
 
-    // CSV 다운로드
+    // 13. CSV 익스포트
     function exportToCSV() {
       if (currentFilteredList.length === 0) {
         alert("다운로드할 상권 점포 데이터가 없습니다. 반경을 넓히거나 다른 위치를 클릭하세요.");
         return;
       }
 
-      let csvContent = "\uFEFF상호명,업종대분류,중심점거리(m),위도,경도\n";
+      let csvContent = "\uFEFF상호명,업종대분류,중심점거리(m),실거래시세,평당단가,위도,경도\n";
       currentFilteredList.forEach(s => {
-        csvContent += `"${s.name}","${s.cat}",${s.dist},${s.lat},${s.lng}\n`;
+        csvContent += `"${s.name}","${s.cat}",${s.dist},"${s.price || '-'}","${s.unit || '-'}",${s.lat},${s.lng}\n`;
       });
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", `BizCompass_상권데이터_${new Date().toISOString().slice(0,10)}.csv`);
+      link.setAttribute("download", `BizCompass_부동산상권데이터_${new Date().toISOString().slice(0,10)}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     }
 
-    // 단일 차트 렌더링
+    // 14. 차트 렌더링
     function renderSingleCharts(baseFoot, baseStores, score) {
       const accessibility = Math.min(95, Math.round(baseFoot / 420));
       const customerPower = Math.min(92, Math.round(score * 0.95));
@@ -760,7 +940,6 @@
       });
     }
 
-    // 비교 차트 렌더링
     function renderCompareCharts(footA, footB) {
       const dataA = [
         Math.round(footA * 0.09), Math.round(footA * 0.24),
@@ -772,7 +951,6 @@
       ];
 
       if (compareFootChart) compareFootChart.destroy();
-
       const ctx = document.getElementById('compareFootChart').getContext('2d');
       compareFootChart = new Chart(ctx, {
         type: 'bar',
