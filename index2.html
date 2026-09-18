@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Biz-Compass | 소프트웨어 분석·설계 공학 명세서</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* 가독성 향상을 위한 스크롤바 및 기본 스타일 */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #020617; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans text-base leading-relaxed antialiased">
+
+  <!-- 최상단 네비게이션 헤더 -->
+  <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 px-8 py-4 flex items-center justify-between shadow-2xl">
+    <div class="flex items-center space-x-4">
+      <span class="bg-indigo-600 text-white text-xs font-black px-3 py-1.5 rounded-md tracking-wider uppercase shadow">SE Phase 1 & 2 Spec</span>
+      <div>
+        <h1 class="text-xl font-black tracking-tight text-white flex items-center gap-3">
+          Biz-Compass
+          <span class="text-sm font-normal text-slate-400">| 공공데이터 기반 다차원 상권·입지 분석 플랫폼 분석 및 설계 종합 명세서</span>
+        </h1>
+      </div>
+    </div>
+    <div class="flex items-center gap-4 text-sm">
+      <span class="text-slate-400 font-medium">과제 대상:</span>
+      <span class="bg-slate-800 text-cyan-400 px-3 py-1 rounded border border-slate-700 font-mono font-bold">2026 웹프레임워크 전공 프로젝트</span>
+    </div>
+  </header>
+
+  <!-- 단계별 탭 네비게이션 바 -->
+  <nav class="bg-slate-900/95 backdrop-blur border-b border-slate-800 px-8 py-3 flex items-center gap-3 overflow-x-auto text-sm sticky top-[69px] z-40">
+    <div class="flex items-center gap-2 mr-2 border-r border-slate-700 pr-4 font-bold text-slate-400 shrink-0">
+      <span class="text-xs uppercase tracking-wider text-indigo-400 font-mono">STEP 1</span>
+      <span>분석 단계 (1~3주차)</span>
+    </div>
+    <button onclick="switchTab('tab-rfp')" id="btn-rfp" class="tab-btn shrink-0 px-4 py-2 rounded-xl font-bold bg-indigo-600 text-white transition flex items-center gap-2 shadow-md">
+      📄 1. 제안요청서 분석 & 벤치마킹
+    </button>
+    <button onclick="switchTab('tab-api-spec')" id="btn-api-spec" class="tab-btn shrink-0 px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-2">
+      🌐 2. 공공 오픈 API 규격 검토
+    </button>
+    <button onclick="switchTab('tab-srs')" id="btn-srs" class="tab-btn shrink-0 px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-2">
+      📋 3. 요구사항 정의서(SRS) & 기능 명세
+    </button>
+
+    <div class="flex items-center gap-2 mx-3 border-r border-slate-700 pr-4 font-bold text-slate-400 shrink-0">
+      <span class="text-xs uppercase tracking-wider text-cyan-400 font-mono">STEP 2</span>
+      <span>설계 단계 (4~6주차)</span>
+    </div>
+    <button onclick="switchTab('tab-arch')" id="btn-arch" class="tab-btn shrink-0 px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-2">
+      🏗️ 4. 시스템 아키텍처 & DFD
+    </button>
+    <button onclick="switchTab('tab-db')" id="btn-db" class="tab-btn shrink-0 px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-2">
+      🗄️ 5. DB 모델링(ERD) & 테이블 정의서
+    </button>
+    <button onclick="switchTab('tab-rest')" id="btn-rest" class="tab-btn shrink-0 px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-2">
+      🔌 6. REST API 인터페이스 명세서
+    </button>
+    <button onclick="switchTab('tab-ui')" id="btn-ui" class="tab-btn shrink-0 px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-2">
+      🖥️ 7. UI 화면 설계서 & 와이어프레임
+    </button>
+  </nav>
+
+  <!-- 메인 컨텐츠 영역 -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-8 space-y-10">
+
+    <!-- =======================================================
+         1. 제안요청서 분석 및 벤치마킹
+         ======================================================= -->
+    <section id="tab-rfp" class="tab-content space-y-8">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
+        <div class="inline-block bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wider">
+          RFP & Stakeholder Analysis (1~3주차)
+        </div>
+        <h2 class="text-3xl font-black text-white tracking-tight">제안요청서(RFP) 과업 분석 및 벤치마킹 명세</h2>
+        <p class="text-slate-300 text-base leading-relaxed">
+          과업지시서에 명시된 사업명 <b>'공공데이터 기반 다차원 상권·입지 분석 및 인사이트 리포트 플랫폼 구축(Biz-Compass)'</b>을 바탕으로 현행 공공데이터 조회의 구조적 한계를 분석하고, 예비 창업자와 지자체 분석가를 지원하기 위한 시스템 차별화 목표를 수립했습니다[cite: 1].
+        </p>
+
+        <!-- As-Is vs To-Be 테이블 -->
+        <div class="overflow-x-auto border border-slate-800 rounded-2xl">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-950 text-slate-200 border-b border-slate-800 uppercase font-mono">
+              <tr>
+                <th class="p-4 w-1/4">분석 항목</th>
+                <th class="p-4 w-3/8 text-rose-400 bg-rose-950/20">현행 공공데이터포털 / 시중 상권분석 (As-Is)[cite: 1]</th>
+                <th class="p-4 w-3/8 text-cyan-300 bg-cyan-950/20">Biz-Compass 플랫폼 구축 방향 (To-Be)[cite: 1]</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800 text-slate-300">
+              <tr>
+                <td class="p-4 font-bold text-white bg-slate-950/40">데이터 표현 방식[cite: 1]</td>
+                <td class="p-4 text-slate-400">단순 그리드 테이블 형태의 텍스트 데이터 조회, 시각적 직관성 결여[cite: 1]</td>
+                <td class="p-4 text-cyan-300 font-medium">GIS 좌표 기반의 실시간 공간 버퍼링, 반경 원 및 행정동 폴리곤 시각화[cite: 1]</td>
+              </tr>
+              <tr>
+                <td class="p-4 font-bold text-white bg-slate-950/40">분석 알고리즘 깊이[cite: 1]</td>
+                <td class="p-4 text-slate-400">단일 지표 단순 나열 (단순 점포 수, 통신사 유동인구 숫자만 개별 표출)</td>
+                <td class="p-4 text-cyan-300 font-medium">유동인구 흐름(+) + 경쟁 점포 밀집도(-) + 배후 세대수를 결합한 복합 스코어링 엔진[cite: 1]</td>
+              </tr>
+              <tr>
+                <td class="p-4 font-bold text-white bg-slate-950/40">후보지 의사결정 지원[cite: 1]</td>
+                <td class="p-4 text-slate-400">후보지를 각각 따로 검색하여 사용자가 수작업으로 지표를 기억하고 대조해야 함</td>
+                <td class="p-4 text-cyan-300 font-medium">A/B 후보 상권 1:1 맞대응 실시간 교차 대조 모드 및 정량적 상권 우위 판정[cite: 1]</td>
+              </tr>
+              <tr>
+                <td class="p-4 font-bold text-white bg-slate-950/40">비용 및 리스크 관리</td>
+                <td class="p-4 text-slate-400">임대료와 매출을 연계하지 못해 과밀 경쟁 골목 진입 후 폐업하는 사례 빈번</td>
+                <td class="p-4 text-cyan-300 font-medium">국토부 실거래가 기반 임대료 시세 추정과 5개년 시계열 차트 및 폐업률 경보 제공[cite: 1]</td>
+              </tr>
+              <tr>
+                <td class="p-4 font-bold text-white bg-slate-950/40">결과 산출물 도출[cite: 1]</td>
+                <td class="p-4 text-slate-400">단순 화면 캡처 수준에 그쳐 실제 사업계획서 제출용 증빙 불가</td>
+                <td class="p-4 text-cyan-300 font-medium">원클릭 인쇄용 종합 리포트 자동 생성 뷰어 및 원천 데이터 UTF-8 CSV 익스포트[cite: 1]</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================
+         2. 공공 오픈 API 규격 검토
+         ======================================================= -->
+    <section id="tab-api-spec" class="tab-content hidden space-y-8">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
+        <div>
+          <h2 class="text-2xl font-black text-white tracking-tight">공공데이터포털 오픈 API 연계 규격 및 캐싱 검토서</h2>
+          <p class="text-sm text-slate-400 mt-1">과업지시서 2장 가목(데이터 파이프라인)에 따른 공공 상권정보 및 실거래가 인터페이스 규격 분석[cite: 1]</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+          <!-- 소상공인 API 상세 -->
+          <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 class="font-bold text-white text-base">1. 소상공인시장진흥공단 상가(상권)정보 API[cite: 1]</h3>
+              <span class="text-cyan-400 font-mono font-bold bg-cyan-950 px-2.5 py-1 rounded text-xs border border-cyan-800">REST / JSON[cite: 1]</span>
+            </div>
+            <div class="text-slate-300 space-y-2 text-xs font-mono">
+              <p>• <b>기본 엔드포인트:</b> <code>https://apis.data.go.kr/.../storeListInRadius</code></p>
+              <p>• <b>요청 파라미터(Request):</b></p>
+              <ul class="pl-4 list-disc space-y-1 text-slate-400">
+                <li><code>radius</code> : 검색 반경 거리 (300, 500, 1000m)[cite: 1]</li>
+                <li><code>cx</code>, <code>cy</code> : 중심 기준점 경도/위도 좌표 (WGS84)</li>
+                <li><code>indsLclsCd</code> : 상권 표준 업종 대분류 코드 (외식, 소매, 서비스 등)[cite: 1]</li>
+              </ul>
+              <p>• <b>응답 필드(Response):</b> <code>bizesId</code>(업소ID), <code>bizesNm</code>(상호명), <code>lon</code>/<code>lat</code>(좌표)</p>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl text-xs text-slate-300 border border-slate-800 space-y-1">
+              <b class="text-cyan-300">엔지니어링 검토 결론:</b>
+              <p class="text-slate-400 leading-relaxed">사용자가 지도를 이동하거나 반경을 바꿀 때마다 공공 API를 직접 호출하면 <b>일일 트래픽 쿼터(1,000회 제한)</b> 초과 및 지연이 발생하므로, 백엔드 PostGIS 공간 DB에 사전 적재하고 <b>IndexedDB 기반 클라이언트 캐싱 계층</b>을 구축해야 함[cite: 1].</p>
+            </div>
+          </div>
+
+          <!-- 국토부 API 상세 -->
+          <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 class="font-bold text-white text-base">2. 국토교통부 상업·업무용 부동산 실거래가 API</h3>
+              <span class="text-emerald-400 font-mono font-bold bg-emerald-950 px-2.5 py-1 rounded text-xs border border-emerald-800">REST / XML</span>
+            </div>
+            <div class="text-slate-300 space-y-2 text-xs font-mono">
+              <p>• <b>기본 엔드포인트:</b> <code>https://apis.data.go.kr/.../getNRGTradeList</code></p>
+              <p>• <b>요청 파라미터(Request):</b></p>
+              <ul class="pl-4 list-disc space-y-1 text-slate-400">
+                <li><code>LAWD_CD</code> : 5자리 법정동 시군구 코드 (예: 강남구 11680)</li>
+                <li><code>DEAL_YMD</code> : 거래 실거래 계약년월 (YYYYMM)</li>
+                <li><code>serviceKey</code> : 공공데이터포털 발급 보안 인증키[cite: 1]</li>
+              </ul>
+              <p>• <b>응답 필드(Response):</b> <code>dealAmount</code>(매매가), <code>monthlyRent</code>(월세), <code>rentDeposit</code>(보증금)</p>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl text-xs text-slate-300 border border-slate-800 space-y-1">
+              <b class="text-emerald-300">엔지니어링 검토 결론:</b>
+              <p class="text-slate-400 leading-relaxed">상가 점포 단위와 부동산 필지 단위를 연결하기 위해 <b>'동코드 + 지번' 기준 복합 외래키</b>를 설계하고, 최근 5개년 분기별 매매·임대 시계열 라인 차트를 출력할 수 있도록 정규화 테이블을 구성해야 함[cite: 1].</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================
+         3. 요구사항 정의서(SRS) & 기능 명세 확정
+         ======================================================= -->
+    <section id="tab-srs" class="tab-content hidden space-y-8">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-2xl font-black text-white tracking-tight">요구사항 정의서 (SRS) 및 기능 명세 확정</h2>
+            <p class="text-sm text-slate-400 mt-1">과업지시서 2장의 가~마 세부 과업을 100% 추적 가능한 IEEE 830 표준 기능 명세로 확정[cite: 1]</p>
+          </div>
+          <span class="text-xs bg-indigo-900/40 text-indigo-300 px-4 py-1.5 rounded-full border border-indigo-700 font-mono font-bold">6대 기능 명세 완료</span>
+        </div>
+
+        <div class="overflow-x-auto border border-slate-800 rounded-2xl">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-950 text-slate-300 border-b border-slate-800 font-mono text-xs">
+              <tr>
+                <th class="p-4 w-28">요구 ID</th>
+                <th class="p-4 w-44">과업 분류[cite: 1]</th>
+                <th class="p-4 w-48">기능 명칭</th>
+                <th class="p-4">세부 요구 명세 및 시스템 처리 규칙[cite: 1]</th>
+                <th class="p-4 w-24 text-center">우선순위</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800 text-slate-300">
+              <tr class="hover:bg-slate-800/40">
+                <td class="p-4 font-mono font-bold text-indigo-400">REQ-FR-01</td>
+                <td class="p-4 text-slate-400">가. 데이터 파이프라인[cite: 1]</td>
+                <td class="p-4 font-bold text-white">비동기 수집 & 캐싱[cite: 1]</td>
+                <td class="p-4 text-xs leading-relaxed">소상공인 및 실거래가 공공 API를 비동기로 수집·정제하며, 일일 쿼터 초과 방지를 위한 인메모리/로컬 캐시 계층을 구축해야 한다[cite: 1].</td>
+                <td class="p-4 text-center"><span class="bg-rose-500/20 text-rose-300 px-2.5 py-1 rounded text-xs font-bold">Must</span></td>
+              </tr>
+              <tr class="hover:bg-slate-800/40">
+                <td class="p-4 font-mono font-bold text-indigo-400">REQ-FR-02</td>
+                <td class="p-4 text-slate-400">나. GIS 엔진[cite: 1]</td>
+                <td class="p-4 font-bold text-white">반경 및 폴리곤 탐색[cite: 1]</td>
+                <td class="p-4 text-xs leading-relaxed">지도 인터랙션을 통해 반경(300m/500m/1km) 및 행정동 다각형 구역 내 점포 수, 개·폐업 추이를 실시간 공간 연산해야 한다[cite: 1].</td>
+                <td class="p-4 text-center"><span class="bg-rose-500/20 text-rose-300 px-2.5 py-1 rounded text-xs font-bold">Must</span></td>
+              </tr>
+              <tr class="hover:bg-slate-800/40">
+                <td class="p-4 font-mono font-bold text-indigo-400">REQ-FR-03</td>
+                <td class="p-4 text-slate-400">다. 알고리즘 엔진[cite: 1]</td>
+                <td class="p-4 font-bold text-white">복합 스코어링 엔진[cite: 1]</td>
+                <td class="p-4 text-xs leading-relaxed">유동인구 흐름(+), 경쟁 점포 밀집도(-), 배후 데이터를 융합하여 0~100점 척도의 업종별 입지 적합도를 도출해야 한다[cite: 1].</td>
+                <td class="p-4 text-center"><span class="bg-rose-500/20 text-rose-300 px-2.5 py-1 rounded text-xs font-bold">Must</span></td>
+              </tr>
+              <tr class="hover:bg-slate-800/40">
+                <td class="p-4 font-mono font-bold text-indigo-400">REQ-FR-04</td>
+                <td class="p-4 text-slate-400">라. 시각화 대시보드[cite: 1]</td>
+                <td class="p-4 font-bold text-white">양방향 상태 동기화[cite: 1]</td>
+                <td class="p-4 text-xs leading-relaxed">지도 영역 선택 이벤트와 우측 차트(막대, 도넛, 5대 역량 레이더 차트) 간 양방향 실시간 리렌더링을 지원해야 한다[cite: 1].</td>
+                <td class="p-4 text-center"><span class="bg-rose-500/20 text-rose-300 px-2.5 py-1 rounded text-xs font-bold">Must</span></td>
+              </tr>
+              <tr class="hover:bg-slate-800/40">
+                <td class="p-4 font-mono font-bold text-indigo-400">REQ-FR-05</td>
+                <td class="p-4 text-slate-400">라. 시각화 대시보드[cite: 1]</td>
+                <td class="p-4 font-bold text-white">A/B 듀얼 상권 비교[cite: 1]</td>
+                <td class="p-4 text-xs leading-relaxed">2개 후보지를 동시 지정하여 유동인구, 점포수, 적합도 점수 차이(Diff)를 1:1 맞대응 대조표로 제공해야 한다[cite: 1].</td>
+                <td class="p-4 text-center"><span class="bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded text-xs font-bold">Should</span></td>
+              </tr>
+              <tr class="hover:bg-slate-800/40">
+                <td class="p-4 font-mono font-bold text-indigo-400">REQ-FR-06</td>
+                <td class="p-4 text-slate-400">마. 리포트 생성기[cite: 1]</td>
+                <td class="p-4 font-bold text-white">리포트 출력 & CSV 추출[cite: 1]</td>
+                <td class="p-4 text-xs leading-relaxed">분석 인사이트 요약 리포트를 출력용 규격으로 구성하고, 추출된 점포 목록을 UTF-8 규격 CSV 파일로 즉시 다운로드해야 한다[cite: 1].</td>
+                <td class="p-4 text-center"><span class="bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded text-xs font-bold">Should</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================
+         4. 시스템 아키텍처 및 DFD (상세 블록 & 데이터 흐름)
+         ======================================================= -->
+    <section id="tab-arch" class="tab-content hidden space-y-8">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
+        <div>
+          <h2 class="text-2xl font-black text-white tracking-tight">시스템 아키텍처 및 데이터 흐름도 (Architecture & DFD)</h2>
+          <p class="text-sm text-slate-400 mt-1">과업지시서 4장의 2단계 설계 산출물: 3계층 물리 아키텍처 및 DFD Level 1 파이프라인[cite: 1]</p>
+        </div>
+
+        <div class="bg-slate-950 p-8 rounded-2xl border border-slate-800 space-y-8">
+          <!-- 계층 1: Presentation -->
+          <div class="bg-slate-900/95 border border-blue-500/40 rounded-2xl p-5 shadow-lg">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                <span class="font-bold text-blue-300 text-sm uppercase tracking-wider">Layer 1. 프론트엔드 표현 계층 (Presentation Layer)</span>
+              </div>
+              <span class="text-xs bg-blue-950 text-blue-400 border border-blue-800 px-3 py-1 rounded font-mono">Client Runtime</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-center">
+              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                <b class="text-white text-base">Leaflet.js GIS 지도 엔진</b>
+                <p class="text-slate-400 text-xs mt-1.5 leading-relaxed">반경 원(Circle) 버퍼링 및 행정동 폴리곤 오버레이 / 마커 클러스터링 최적화[cite: 1]</p>
+              </div>
+              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                <b class="text-white text-base">Chart.js 동기화 대시보드</b>
+                <p class="text-slate-400 text-xs mt-1.5 leading-relaxed">5대 역량 레이더 평가 / 시간대별 유동인구 추이 / 업종 구성비 도넛 차트[cite: 1]</p>
+              </div>
+              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                <b class="text-white text-base">리포트 & CSV 생성 엔진</b>
+                <p class="text-slate-400 text-xs mt-1.5 leading-relaxed">A4 최적화 인쇄 미디어 쿼리 뷰어 / UTF-8 Blob 파일 다운로드 트리거[cite: 1]</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 연결선 -->
+          <div class="flex items-center justify-center gap-3 text-slate-400 text-xs font-mono">
+            <span class="h-px bg-slate-800 flex-1"></span>
+            <span class="bg-slate-900 border border-slate-700 px-3 py-1 rounded">▼ RESTful HTTPS 통신 (JSON / GeoJSON Payload) ▲</span>
+            <span class="h-px bg-slate-800 flex-1"></span>
+          </div>
+
+          <!-- 계층 2: Service -->
+          <div class="bg-slate-900/95 border border-indigo-500/40 rounded-2xl p-5 shadow-lg">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-indigo-500"></span>
+                <span class="font-bold text-indigo-300 text-sm uppercase tracking-wider">Layer 2. 백엔드 서비스 계층 (Application Service Layer)</span>
+              </div>
+              <span class="text-xs bg-indigo-950 text-indigo-400 border border-indigo-800 px-3 py-1 rounded font-mono">Go Fiber / Node.js Engine</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-center">
+              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                <b class="text-white text-base">API Router</b>
+                <p class="text-slate-400 text-xs mt-1.5 leading-relaxed">좌표 유효성 검증 및 엔드포인트 파라미터 제어</p>
+              </div>
+              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                <b class="text-white text-base">Spatial Engine</b>
+                <p class="text-slate-400 text-xs mt-1.5 leading-relaxed">반경 내 공간 연산 및 점포 데이터 추출 필터[cite: 1]</p>
+              </div>
+              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                <b class="text-white text-base">Scoring Engine</b>
+                <p class="text-slate-400 text-xs mt-1.5 leading-relaxed">유동인구 및 과밀도 가중치 스코어링 알고리즘[cite: 1]</p>
+              </div>
+              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                <b class="text-white text-base">Cache Layer</b>
+                <p class="text-slate-400 text-xs mt-1.5 leading-relaxed">자주 찾는 핫스팟 상권 메모리 캐싱 (10ms 이내)[cite: 1]</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 연결선 -->
+          <div class="flex items-center justify-center gap-3 text-slate-400 text-xs font-mono">
+            <span class="h-px bg-slate-800 flex-1"></span>
+            <span class="bg-slate-900 border border-slate-700 px-3 py-1 rounded">▼ SQL & Spatial Query (GIST 공간 인덱스 활용) ▲</span>
+            <span class="h-px bg-slate-800 flex-1"></span>
+          </div>
+
+          <!-- 계층 3: Persistence -->
+          <div class="bg-slate-900/95 border border-emerald-500/40 rounded-2xl p-5 shadow-lg">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                <span class="font-bold text-emerald-300 text-sm uppercase tracking-wider">Layer 3. 데이터베이스 및 배치 수집 계층 (Persistence Layer)</span>
+              </div>
+              <span class="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-3 py-1 rounded font-mono">PostGIS & Batch Pipeline[cite: 1]</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+                <div>
+                  <b class="text-white text-base">PostgreSQL + PostGIS 공간 데이터베이스</b>
+                  <p class="text-slate-400 text-xs mt-1">Point(위경도), Polygon(행정동) 공간 인덱스(GIST) 적용으로 50ms 이내 쿼리 보장[cite: 1]</p>
+                </div>
+                <span class="text-emerald-400 font-mono font-bold text-xs bg-emerald-950 px-2 py-1 rounded border border-emerald-800">Primary Store</span>
+              </div>
+              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+                <div>
+                  <b class="text-white text-base">새벽 비동기 배치 수집기 (Batch Cron Worker)</b>
+                  <p class="text-slate-400 text-xs mt-1">소상공인시장진흥공단 및 국토교통부 실거래가 공공 API 일일 자동 증분 동기화[cite: 1]</p>
+                </div>
+                <span class="text-cyan-400 font-mono font-bold text-xs bg-cyan-950 px-2 py-1 rounded border border-cyan-800">Scheduler[cite: 1]</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================
+         5. DB 모델링(ERD) 및 테이블 정의서
+         ======================================================= -->
+    <section id="tab-db" class="tab-content hidden space-y-8">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
+        <div>
+          <h2 class="text-2xl font-black text-white tracking-tight">데이터베이스 모델링(ERD) 및 테이블 정의서</h2>
+          <p class="text-sm text-slate-400 mt-1">PostGIS 공간 지오메트리 타입(`Point`, `Polygon`) 기반 3개 엔티티 물리 설계[cite: 1]</p>
+        </div>
+
+        <!-- ERD 시각화 블록 -->
+        <div class="bg-slate-950 p-8 rounded-2xl border border-slate-800 space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+            
+            <!-- ADMIN_DONG -->
+            <div class="bg-slate-900 border border-indigo-500/50 rounded-2xl overflow-hidden shadow-xl">
+              <div class="bg-indigo-950/90 px-4 py-3 border-b border-indigo-800 font-mono font-bold text-indigo-300 flex justify-between items-center">
+                <span>ADMIN_DONG (행정동)</span>
+                <span class="text-xs bg-indigo-900 px-2 py-0.5 rounded text-indigo-200">1</span>
+              </div>
+              <div class="p-4 font-mono space-y-2 text-xs">
+                <div class="flex justify-between text-yellow-300 font-bold border-b border-slate-800 pb-1"><span>PK dong_code</span><span>VARCHAR(10)</span></div>
+                <div class="flex justify-between text-slate-300"><span>dong_name</span><span>VARCHAR(50)</span></div>
+                <div class="flex justify-between text-slate-300"><span>population</span><span>NUMERIC(10)</span></div>
+                <div class="flex justify-between text-emerald-400 font-bold"><span>boundary</span><span>GEOMETRY(Poly,4326)</span></div>
+              </div>
+            </div>
+
+            <!-- STORE -->
+            <div class="bg-slate-900 border border-blue-500/50 rounded-2xl overflow-hidden shadow-xl">
+              <div class="bg-blue-950/90 px-4 py-3 border-b border-blue-800 font-mono font-bold text-blue-300 flex justify-between items-center">
+                <span>STORE (상가업소)</span>
+                <span class="text-xs bg-blue-900 px-2 py-0.5 rounded text-blue-200">N (1:N)</span>
+              </div>
+              <div class="p-4 font-mono space-y-2 text-xs">
+                <div class="flex justify-between text-yellow-300 font-bold border-b border-slate-800 pb-1"><span>PK store_id</span><span>BIGINT</span></div>
+                <div class="flex justify-between text-indigo-300"><span>FK dong_code</span><span>VARCHAR(10)</span></div>
+                <div class="flex justify-between text-slate-300"><span>name</span><span>VARCHAR(100)</span></div>
+                <div class="flex justify-between text-slate-300"><span>category</span><span>VARCHAR(50)</span></div>
+                <div class="flex justify-between text-emerald-400 font-bold"><span>geom [GIST]</span><span>GEOMETRY(Pt,4326)</span></div>
+              </div>
+            </div>
+
+            <!-- REAL_ESTATE -->
+            <div class="bg-slate-900 border border-cyan-500/50 rounded-2xl overflow-hidden shadow-xl">
+              <div class="bg-cyan-950/90 px-4 py-3 border-b border-cyan-800 font-mono font-bold text-cyan-300 flex justify-between items-center">
+                <span>REAL_ESTATE (실거래시세)</span>
+                <span class="text-xs bg-cyan-900 px-2 py-0.5 rounded text-cyan-200">N (1:N)</span>
+              </div>
+              <div class="p-4 font-mono space-y-2 text-xs">
+                <div class="flex justify-between text-yellow-300 font-bold border-b border-slate-800 pb-1"><span>PK trade_id</span><span>BIGINT</span></div>
+                <div class="flex justify-between text-blue-300"><span>FK store_id</span><span>BIGINT</span></div>
+                <div class="flex justify-between text-slate-300"><span>contract_ym</span><span>CHAR(6)</span></div>
+                <div class="flex justify-between text-slate-300"><span>deal_amount</span><span>NUMERIC(14,2)</span></div>
+                <div class="flex justify-between text-slate-300"><span>monthly_rent</span><span>NUMERIC(12,2)</span></div>
+              </div>
+            </div>
+
+          </div>
+          
+          <div class="text-xs text-slate-400 text-center font-mono bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+            [관계 매핑]: ADMIN_DONG (1) ── 관할구역포함 ──&lt; STORE (N) (1) ── 실거래이력매핑 ──&lt; REAL_ESTATE (N)
+          </div>
+        </div>
+
+        <!-- 테이블 물리 스키마 정의서 -->
+        <div class="space-y-4">
+          <h3 class="text-base font-bold text-slate-200">주요 테이블 상세 물리 스키마 명세</h3>
+          <div class="overflow-x-auto border border-slate-800 rounded-2xl">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-950 text-slate-300 border-b border-slate-800 font-mono text-xs">
+                <tr>
+                  <th class="p-3.5">테이블명</th>
+                  <th class="p-3.5">컬럼명</th>
+                  <th class="p-3.5">데이터 타입</th>
+                  <th class="p-3.5">제약 조건</th>
+                  <th class="p-3.5">설명 및 인덱스 명세</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800 text-slate-300 font-mono text-xs">
+                <tr>
+                  <td class="p-3.5 text-indigo-400 font-bold">STORE</td>
+                  <td class="p-3.5 text-white font-bold">store_id</td>
+                  <td class="p-3.5">BIGINT</td>
+                  <td class="p-3.5">PRIMARY KEY</td>
+                  <td class="p-3.5 font-sans">점포 고유 일련번호 (소상공인 상가업소번호 매핑)</td>
+                </tr>
+                <tr>
+                  <td class="p-3.5 text-indigo-400 font-bold">STORE</td>
+                  <td class="p-3.5 text-emerald-400 font-bold">geom</td>
+                  <td class="p-3.5">GEOMETRY(Point, 4326)</td>
+                  <td class="p-3.5">NOT NULL</td>
+                  <td class="p-3.5 font-sans text-emerald-300"><b>GIST 공간 인덱스 적용 (10만 건 50ms 이내 반경 검색 보장)</b>[cite: 1]</td>
+                </tr>
+                <tr>
+                  <td class="p-3.5 text-indigo-400 font-bold">REAL_ESTATE</td>
+                  <td class="p-3.5 text-white font-bold">monthly_rent</td>
+                  <td class="p-3.5">NUMERIC(12, 2)</td>
+                  <td class="p-3.5">NULL 허용</td>
+                  <td class="p-3.5 font-sans">월세 임대료 시세 (소상공인 고정비 및 BEP 연산에 활용)[cite: 1]</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================
+         6. REST API 인터페이스 명세서
+         ======================================================= -->
+    <section id="tab-rest" class="tab-content hidden space-y-8">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
+        <div>
+          <h2 class="text-2xl font-black text-white tracking-tight">RESTful API 설계 명세서</h2>
+          <p class="text-sm text-slate-400 mt-1">과업지시서의 5대 핵심 모듈을 호출하기 위한 백엔드 엔드포인트 세부 규격[cite: 1]</p>
+        </div>
+
+        <div class="space-y-4 text-sm">
+          <!-- API 1 -->
+          <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3 font-mono">
+                <span class="bg-emerald-600 text-white font-bold px-2.5 py-1 rounded text-xs">GET</span>
+                <span class="text-white font-bold text-base">/api/v1/stores/radius</span>
+              </div>
+              <span class="text-slate-400 text-xs">반경 내 점포 공간 쿼리 및 기본 통계 반환[cite: 1]</span>
+            </div>
+            <div class="text-slate-300 text-xs font-mono pl-3 space-y-1 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+              <p>• <b>Request Query:</b> <code>lat=37.5000&lng=127.0360&radius=500&category=ALL</code></p>
+              <p>• <b>Response Data:</b> <code>{ status: 200, count: 24, stores: [...], footTraffic: 34210, score: 84 }</code></p>
+            </div>
+          </div>
+
+          <!-- API 2 -->
+          <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3 font-mono">
+                <span class="bg-blue-600 text-white font-bold px-2.5 py-1 rounded text-xs">POST</span>
+                <span class="text-white font-bold text-base">/api/v1/analysis/compare</span>
+              </div>
+              <span class="text-slate-400 text-xs">A/B 듀얼 후보 상권 1:1 맞대응 대조 판정[cite: 1]</span>
+            </div>
+            <div class="text-slate-300 text-xs font-mono pl-3 space-y-1 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+              <p>• <b>Request Body:</b> <code>{ regionA: { lat: 37.5000, lng: 127.0360, radius: 500 }, regionB: { lat: 37.4979, lng: 127.0276, radius: 500 } }</code></p>
+              <p>• <b>Response Data:</b> <code>{ scoreA: 84, scoreB: 71, diff: 13, verdict: "A 상권이 경쟁 밀집도 대비 13점 우위" }</code></p>
+            </div>
+          </div>
+
+          <!-- API 3 -->
+          <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3 font-mono">
+                <span class="bg-emerald-600 text-white font-bold px-2.5 py-1 rounded text-xs">GET</span>
+                <span class="text-white font-bold text-base">/api/v1/real-estate/history/:storeId</span>
+              </div>
+              <span class="text-slate-400 text-xs">해당 필지의 최근 5개년 분기별 실거래가 시계열 조회[cite: 1]</span>
+            </div>
+            <div class="text-slate-300 text-xs font-mono pl-3 space-y-1 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+              <p>• <b>Response Data:</b> <code>{ history: [{ quarter: '26-2Q', tradePrice: 19.2, rent: 850 }, { quarter: '25-1Q', tradePrice: 18.2, rent: 800 }] }</code></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================
+         7. UI 화면 설계서 및 와이어프레임 (인터랙티브 토글 제어)
+         ======================================================= -->
+    <section id="tab-ui" class="tab-content hidden space-y-8">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-2xl font-black text-white tracking-tight">UI/UX 화면 설계서 (Story Board & Wireframe)</h2>
+            <p class="text-sm text-slate-400 mt-1">과업지시서 2장 라목(인터랙티브 대시보드)의 2열 레이아웃 인터페이스 명세[cite: 1]</p>
+          </div>
+          <span class="text-xs text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-800 px-4 py-1.5 rounded-full shadow">
+            💡 버튼 클릭 시 인터랙티브 상태 토글 작동
+          </span>
+        </div>
+
+        <!-- 와이어프레임 본체 박스 -->
+        <div class="border border-slate-800 rounded-2xl bg-slate-950 p-6 space-y-5 shadow-inner">
+          
+          <!-- 헤더 와이어프레임 컨트롤러 -->
+          <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-4 text-sm">
+            <div class="font-bold text-white flex items-center gap-3">
+              <span class="bg-blue-600 text-xs font-black px-2 py-0.5 rounded">v6.0</span>
+              <span>Biz-Compass 헤더 제어기</span>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+              <button onclick="toggleWireframe('cluster')" id="wf-btn-cluster" class="px-3 py-1.5 rounded-lg border font-bold transition bg-emerald-600/20 text-emerald-300 border-emerald-500">
+                📦 클러스터: ON
+              </button>
+              <button onclick="toggleWireframe('boundary')" id="wf-btn-boundary" class="px-3 py-1.5 rounded-lg border font-bold transition bg-indigo-600/20 text-indigo-300 border-indigo-500">
+                🗺️ 구역경계: ON
+              </button>
+              <button onclick="toggleWireframe('heatmap')" id="wf-btn-heatmap" class="px-3 py-1.5 rounded-lg border font-bold transition bg-slate-800 text-slate-400 border-slate-700">
+                🔥 히트맵: OFF
+              </button>
+              <button onclick="toggleWireframe('compare')" id="wf-btn-compare" class="px-3 py-1.5 rounded-lg border font-bold transition bg-slate-800 text-slate-400 border-slate-700">
+                ⚔️ A/B 비교: OFF
+              </button>
+
+              <div class="flex items-center gap-1.5 pl-3 border-l border-slate-700">
+                <button onclick="setWireframeRadius(300)" id="wf-rad-300" class="px-2.5 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition">300m</button>
+                <button onclick="setWireframeRadius(500)" id="wf-rad-500" class="px-2.5 py-1.5 rounded-lg bg-blue-600 text-white font-bold transition">500m</button>
+                <button onclick="setWireframeRadius(1000)" id="wf-rad-1000" class="px-2.5 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition">1km</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 서브바 카테고리 칩 -->
+          <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex items-center justify-between text-xs overflow-x-auto gap-3">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-slate-400">업종 선택:</span>
+              <button onclick="setWireframeCategory('ALL')" id="wf-cat-ALL" class="px-3 py-1 rounded-full font-bold bg-blue-500/20 text-blue-300 border border-blue-400">전체보기</button>
+              <button onclick="setWireframeCategory('카페')" id="wf-cat-카페" class="px-3 py-1 rounded-full bg-slate-800 text-slate-400 hover:text-white">☕ 카페/디저트</button>
+              <button onclick="setWireframeCategory('한식')" id="wf-cat-한식" class="px-3 py-1 rounded-full bg-slate-800 text-slate-400 hover:text-white">🍲 한식/식사</button>
+              <button onclick="setWireframeCategory('치킨')" id="wf-cat-치킨" class="px-3 py-1 rounded-full bg-slate-800 text-slate-400 hover:text-white">🍗 치킨/주점</button>
+            </div>
+            <div class="text-xs text-slate-400">
+              선택된 권역: <b id="wf-region-text" class="text-cyan-300">서울 강남구 테헤란로 (반경 500m)</b>
+            </div>
+          </div>
+
+          <!-- 본문 2열 분할 레이아웃 -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-5 h-[420px] text-sm">
+            <!-- 좌측 지도 영역 -->
+            <div class="md:col-span-7 bg-slate-900/70 border border-dashed border-indigo-500/50 rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="font-black text-indigo-300 text-base">좌측: GIS 지도 인터랙션 뷰어 (Leaflet Canvas)[cite: 1]</span>
+                  <span class="bg-indigo-950 text-indigo-400 border border-indigo-800 px-2.5 py-1 rounded text-xs font-mono">Viewport: 7/12</span>
+                </div>
+                <p class="text-slate-400 text-xs">사용자 마우스 클릭 좌표를 중심으로 지리공간 버퍼 연산을 수행하는 뷰포트 영역입니다[cite: 1].</p>
+              </div>
+
+              <!-- 동적 상태 표출 인디케이터 -->
+              <div class="bg-slate-950/90 p-4 rounded-xl border border-slate-800 space-y-2.5 text-xs">
+                <div class="text-slate-200 font-bold flex items-center justify-between border-b border-slate-800 pb-2">
+                  <span>🗺️ 현재 맵 레이어 상태:</span>
+                  <span id="wf-status-summary" class="text-cyan-400 font-mono">반경 500m | 클러스터 ON | 경계 ON</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3 text-slate-400">
+                  <div>• 클러스터링: <b id="wf-st-cluster" class="text-emerald-400">활성화</b></div>
+                  <div>• 행정동 경계: <b id="wf-st-boundary" class="text-indigo-400">활성화</b></div>
+                  <div>• 과밀도 히트맵: <b id="wf-st-heatmap" class="text-slate-500">비활성</b></div>
+                  <div>• 분석 모드: <b id="wf-st-mode" class="text-blue-400">단일 상권 분석</b></div>
+                </div>
+              </div>
+
+              <div class="text-xs text-slate-500">
+                * 지도 마커 클릭 시 국토교통부 실거래가 5개년 시계열 모달 팝업이 연동됩니다[cite: 1].
+              </div>
+            </div>
+
+            <!-- 우측 대시보드 영역 -->
+            <div class="md:col-span-5 bg-slate-900/70 border border-dashed border-cyan-500/50 rounded-2xl p-6 flex flex-col justify-between overflow-hidden">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="font-black text-cyan-300 text-base">우측: 양방향 동기화 분석 대시보드[cite: 1]</span>
+                  <span class="bg-cyan-950 text-cyan-400 border border-cyan-800 px-2.5 py-1 rounded text-xs font-mono">Viewport: 5/12</span>
+                </div>
+                <p class="text-slate-400 text-xs">지도에서 추출된 점포 집계와 통계 수치를 실시간 리렌더링합니다[cite: 1].</p>
+              </div>
+
+              <div class="space-y-3 text-xs">
+                <!-- 지표 카드 -->
+                <div class="grid grid-cols-3 gap-2 text-center">
+                  <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                    <span class="text-slate-500 text-[11px]">추출 점포</span>
+                    <p class="text-base font-black text-blue-400 mt-0.5" id="wf-disp-stores">24개소</p>
+                  </div>
+                  <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                    <span class="text-slate-500 text-[11px]">일평균 유동</span>
+                    <p class="text-base font-black text-slate-200 mt-0.5" id="wf-disp-foot">34,210명</p>
+                  </div>
+                  <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                    <span class="text-slate-500 text-[11px]">입지 적합도</span>
+                    <p class="text-base font-black text-emerald-400 mt-0.5" id="wf-disp-score">84점</p>
+                  </div>
+                </div>
+
+                <!-- 모의 차트 영역 -->
+                <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-center text-slate-400 space-y-1">
+                  <div class="text-xs font-bold text-slate-200">🕸️ [Chart.js] 5대 역량 다차원 레이더 차트[cite: 1]</div>
+                  <p class="text-[11px] text-slate-500">접근성(85) | 유입력(90) | 안정성(78) | 성장성(88) | 구매력(82)</p>
+                </div>
+
+                <!-- 모의 테이블 -->
+                <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-slate-400">
+                  <div class="text-xs font-bold text-slate-200 mb-1">📋 반경 내 추출 점포 테이블 (CSV 다운로드 연계)[cite: 1]</div>
+                  <div class="text-xs text-slate-500 flex justify-between border-b border-slate-800 pb-1">
+                    <span>스타벅스 테헤란점 (카페)</span><span class="text-blue-400 font-mono">180m</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="text-right text-xs text-slate-500">
+                Status: 양방향 이벤트 리스너 바인딩 완료[cite: 1]
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="bg-slate-900 border-t border-slate-800 py-6 text-center text-xs text-slate-500">
+    Biz-Compass Analysis & Design Specification &copy; 2026 Inha Technical College - Department of Computer Information Engineering
+  </footer>
+
+  <!-- 자바스크립트 (탭 전환 및 와이어프레임 인터랙티브 토글 제어) -->
+  <script>
+    // 탭 전환 함수
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.className = "tab-btn shrink-0 px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-2";
+      });
+
+      document.getElementById(tabId).classList.remove('hidden');
+      const activeBtn = document.getElementById(tabId.replace('tab-', 'btn-'));
+      if (activeBtn) {
+        activeBtn.className = "tab-btn shrink-0 px-4 py-2 rounded-xl font-bold bg-indigo-600 text-white transition flex items-center gap-2 shadow-md";
+      }
+    }
+
+    // 7번 UI 와이어프레임 상태 객체
+    const wfState = {
+      cluster: true,
+      boundary: true,
+      heatmap: false,
+      compare: false,
+      radius: 500,
+      category: 'ALL'
+    };
+
+    // 와이어프레임 토글 핸들러
+    function toggleWireframe(type) {
+      wfState[type] = !wfState[type];
+      const btn = document.getElementById(`wf-btn-${type}`);
+      const st = document.getElementById(`wf-st-${type}`);
+
+      if (wfState[type]) {
+        btn.className = "px-3 py-1.5 rounded-lg border font-bold transition bg-emerald-600/20 text-emerald-300 border-emerald-500";
+        btn.innerText = `${getLabel(type)}: ON`;
+        if (st) {
+          st.innerText = "활성화";
+          st.className = "text-emerald-400";
+        }
+      } else {
+        btn.className = "px-3 py-1.5 rounded-lg border font-bold transition bg-slate-800 text-slate-400 border-slate-700";
+        btn.innerText = `${getLabel(type)}: OFF`;
+        if (st) {
+          st.innerText = "비활성";
+          st.className = "text-slate-500";
+        }
+      }
+
+      if (type === 'compare') {
+        const modeText = document.getElementById('wf-st-mode');
+        modeText.innerText = wfState.compare ? "A/B 듀얼 맞대응 비교" : "단일 상권 분석";
+        modeText.className = wfState.compare ? "text-amber-400 font-bold" : "text-blue-400";
+      }
+
+      updateSummary();
+    }
+
+    function getLabel(type) {
+      if (type === 'cluster') return '📦 클러스터';
+      if (type === 'boundary') return '🗺️ 구역경계';
+      if (type === 'heatmap') return '🔥 히트맵';
+      if (type === 'compare') return '⚔️ A/B 비교';
+      return type;
+    }
+
+    // 반경 설정 핸들러
+    function setWireframeRadius(r) {
+      wfState.radius = r;
+      [300, 500, 1000].forEach(rad => {
+        const b = document.getElementById(`wf-rad-${rad}`);
+        if (rad === r) {
+          b.className = "px-2.5 py-1.5 rounded-lg bg-blue-600 text-white font-bold transition";
+        } else {
+          b.className = "px-2.5 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition";
+        }
+      });
+      document.getElementById('wf-region-text').innerText = `서울 강남구 테헤란로 (반경 ${r}m)`;
+      
+      if (r === 300) {
+        document.getElementById('wf-disp-stores').innerText = "14개소";
+        document.getElementById('wf-disp-foot').innerText = "21,400명";
+        document.getElementById('wf-disp-score').innerText = "79점";
+      } else if (r === 500) {
+        document.getElementById('wf-disp-stores').innerText = "24개소";
+        document.getElementById('wf-disp-foot').innerText = "34,210명";
+        document.getElementById('wf-disp-score').innerText = "84점";
+      } else {
+        document.getElementById('wf-disp-stores').innerText = "68개소";
+        document.getElementById('wf-disp-foot').innerText = "82,500명";
+        document.getElementById('wf-disp-score').innerText = "91점";
+      }
+
+      updateSummary();
+    }
+
+    // 업종 필터 핸들러
+    function setWireframeCategory(cat) {
+      wfState.category = cat;
+      ['ALL', '카페', '한식', '치킨'].forEach(c => {
+        const b = document.getElementById(`wf-cat-${c}`);
+        if (c === cat) {
+          b.className = "px-3 py-1 rounded-full font-bold bg-blue-500/20 text-blue-300 border border-blue-400";
+        } else {
+          b.className = "px-3 py-1 rounded-full bg-slate-800 text-slate-400 hover:text-white";
+        }
+      });
+    }
+
+    function updateSummary() {
+      const summary = document.getElementById('wf-status-summary');
+      const c = wfState.cluster ? '클러스터 ON' : '클러스터 OFF';
+      const b = wfState.boundary ? '경계 ON' : '경계 OFF';
+      const h = wfState.heatmap ? '히트맵 ON' : '히트맵 OFF';
+      summary.innerText = `반경 ${wfState.radius}m | ${c} | ${b} | ${h}`;
+    }
+  </script>
+</body>
+</html>
