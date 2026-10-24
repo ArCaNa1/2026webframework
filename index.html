@@ -1074,6 +1074,30 @@
       });
     }
 
+    // 16. 손익분기점(BEP) 실시간 연산 로직
+    function calculateBEP() {
+      const rent = parseFloat(document.getElementById('bep-rent').value) || 0;
+      const fixed = parseFloat(document.getElementById('bep-fixed').value) || 0;
+      const price = parseFloat(document.getElementById('bep-price').value) || 5000;
+      const costRate = parseFloat(document.getElementById('bep-cost-rate').value) || 35;
+
+      document.getElementById('bep-cost-rate-label').innerText = `${costRate}%`;
+
+      // 총 고정비 = (월세 + 인건비/기타) * 10,000원
+      const totalFixedCost = (rent + fixed) * 10000;
+      // 공헌이익률 = 1 - (원가율 / 100)
+      const contributionMarginRatio = 1 - (costRate / 100);
+
+      // 손익분기 월 매출 = 총고정비 / 공헌이익률
+      const bepSales = Math.round(totalFixedCost / (contributionMarginRatio || 0.01));
+      // 하루 손익분기 판매량 (30일 영업 기준)
+      const dailySales = Math.round(bepSales / 30);
+      const dailyQty = Math.ceil(dailySales / price);
+
+      document.getElementById('bep-monthly-sales').innerText = `${Math.round(bepSales / 10000).toLocaleString()}만원`;
+      document.getElementById('bep-daily-qty').innerText = `${dailyQty.toLocaleString()}잔(건) / 일`;
+    }
+
     function renderCompareCharts(footA, footB) {
       const dataA = [
         Math.round(footA * 0.09), Math.round(footA * 0.24),
@@ -1104,6 +1128,119 @@
     }
 
     window.onload = initMap;
+
+    // [모달 제어 및 BEP 계산 함수]
+    function openStoreDetail(name) {
+      const modal = document.getElementById('store-detail-modal');
+      if (!modal) return;
+      document.getElementById('modal-store-name').innerText = name || "점포 정밀 분석";
+      calculateBEP();
+      modal.classList.remove('hidden');
+    }
+
+    function closeStoreDetail() {
+      const modal = document.getElementById('store-detail-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function calculateBEP() {
+      const rent = parseFloat(document.getElementById('bep-rent').value) || 0;
+      const fixed = parseFloat(document.getElementById('bep-fixed').value) || 0;
+      const price = parseFloat(document.getElementById('bep-price').value) || 5000;
+      const costRate = parseFloat(document.getElementById('bep-cost-rate').value) || 35;
+
+      document.getElementById('bep-cost-rate-label').innerText = `${costRate}%`;
+
+      const totalFixedCost = (rent + fixed) * 10000;
+      const contributionMarginRatio = 1 - (costRate / 100);
+
+      const bepSales = Math.round(totalFixedCost / (contributionMarginRatio || 0.01));
+      const dailySales = Math.round(bepSales / 30);
+      const dailyQty = Math.ceil(dailySales / price);
+
+      document.getElementById('bep-monthly-sales').innerText = `${Math.round(bepSales / 10000).toLocaleString()}만원`;
+      document.getElementById('bep-daily-qty').innerText = `${dailyQty.toLocaleString()}잔(건) / 일`;
+    }
   </script>
+
+  <!-- [국토부 실거래가 및 창업 손익분기점(BEP) 시뮬레이터 모달] -->
+  <div id="store-detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      
+      <!-- 모달 헤더 -->
+      <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+        <div>
+          <span class="text-[11px] font-bold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full">국토교통부 실거래 연계 & 창업 타당성</span>
+          <h3 id="modal-store-name" class="text-lg font-black text-slate-800 mt-1">점포 정밀 입지 진단</h3>
+        </div>
+        <button onclick="closeStoreDetail()" class="text-slate-400 hover:text-slate-700 text-2xl font-bold leading-none p-1">✕</button>
+      </div>
+
+      <!-- 상업용 부동산 실거래 시세 카드 -->
+      <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs space-y-1.5">
+        <div class="flex justify-between text-slate-600">
+          <span>해당 필지 추정 평당 임대료</span>
+          <b class="text-slate-900 font-semibold">18.4만원 / 평</b>
+        </div>
+        <div class="flex justify-between text-slate-600">
+          <span>인근 1층 상가 실거래 기준 시세</span>
+          <b class="text-blue-600 font-bold">보증금 5,000 / 월 250만원</b>
+        </div>
+      </div>
+
+      <!-- 손익분기점(BEP) 인터랙티브 시뮬레이터 -->
+      <div class="bg-blue-50/70 p-4 rounded-xl border border-blue-200 space-y-3">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+            🧮 맞춤형 손익분기점(BEP) 시뮬레이터
+          </h4>
+          <span class="text-[10px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">실시간 연산</span>
+        </div>
+        <p class="text-[11px] text-slate-500 leading-relaxed">
+          예상 고정비와 원가율을 설정하여 월 손익분기 매출과 하루 최소 판매 잔수를 즉시 계산합니다.
+        </p>
+
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="text-[10px] text-slate-600 font-medium block mb-1">예상 월세(만원)</label>
+            <input type="number" id="bep-rent" value="250" oninput="calculateBEP()" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-blue-500" />
+          </div>
+          <div>
+            <label class="text-[10px] text-slate-600 font-medium block mb-1">인건비·공과(만원)</label>
+            <input type="number" id="bep-fixed" value="350" oninput="calculateBEP()" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-blue-500" />
+          </div>
+          <div>
+            <label class="text-[10px] text-slate-600 font-medium block mb-1">평균 단가(원)</label>
+            <input type="number" id="bep-price" value="5000" oninput="calculateBEP()" class="w-full bg-white border border-slate-300 rounded px-2 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-blue-500" />
+          </div>
+        </div>
+
+        <div class="space-y-1 pt-1">
+          <div class="flex justify-between text-[11px] text-slate-600">
+            <span>식자재 원가율 (변동비)</span>
+            <b id="bep-cost-rate-label" class="text-rose-600 font-bold">35%</b>
+          </div>
+          <input type="range" id="bep-cost-rate" min="15" max="65" value="35" oninput="calculateBEP()" class="w-full accent-blue-600 cursor-pointer h-1.5 bg-slate-200 rounded-lg" />
+        </div>
+
+        <!-- 시뮬레이션 결과 표출 카드 -->
+        <div class="grid grid-cols-2 gap-2 bg-white p-3 rounded-lg border border-blue-100 text-center shadow-sm">
+          <div>
+            <p class="text-[10px] text-slate-400">손익분기 월 매출</p>
+            <p class="text-sm font-black text-slate-900 mt-0.5" id="bep-monthly-sales">923만원</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-400">생존 최소 하루 판매량</p>
+            <p class="text-sm font-black text-blue-600 mt-0.5" id="bep-daily-qty">62잔(건) / 일</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 닫기 버튼 -->
+      <button onclick="closeStoreDetail()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition">
+        닫기
+      </button>
+    </div>
+  </div>
 </body>
 </html>
