@@ -95,6 +95,22 @@
         📄 리포트
       </button>
     </div>
+    <!-- 실시간 입지/주소 검색창 -->
+      <div class="relative flex items-center">
+        <input 
+          type="text" 
+          id="location-search-input" 
+          placeholder="지역명/역/주소 검색 (예: 홍대입구, 성수동)" 
+          onkeydown="if(event.key === 'Enter') searchLocationKeyword();"
+          class="bg-slate-800/90 text-white placeholder-slate-400 text-xs px-3 py-1.5 rounded-l-lg border border-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 w-52 sm:w-64 transition"
+        />
+        <button 
+          onclick="searchLocationKeyword()" 
+          class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-r-lg border border-blue-600 transition flex items-center gap-1 shadow"
+        >
+          🔍 검색
+        </button>
+      </div>
   </header>
 
   <!-- 업종 필터링 및 권역 선택 서브 바 -->
@@ -211,6 +227,20 @@
             </div>
           </div>
         </div>
+
+        <!-- [실시간 상위 업종 TOP 5 랭킹 패널] -->
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+        <div class="flex justify-between items-center mb-2.5">
+          <h4 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+            <span>🏆</span> 반경 내 주요 업종 밀집도 TOP 5
+          </h4>
+          <span class="text-[10px] text-slate-400 font-medium">실시간 점유율 기준</span>
+        </div>
+        <div id="top-category-container" class="space-y-2">
+          <!-- 스크립트에서 동적 생성 -->
+          <div class="text-[11px] text-slate-400 text-center py-2">상권을 분석하면 업종 순위가 집계됩니다.</div>
+        </div>
+      </div>
 
         <!-- 반경 내 추출 점포 테이블 (클릭 시 상세 모달 트리거) -->
         <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
@@ -783,10 +813,58 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     }
 
     // 8. 가중치 모달 제어 (수식 오류 완벽 수정)
-    function toggleWeightModal(open) {
+    // [기존 버튼의 onclick="toggleWeightModal(true)"와 함수 이름 일치]
+    function toggleWeightModal(isOpen) {
       const modal = document.getElementById('weight-modal');
-      if (open) modal.classList.remove('hidden');
-      else modal.classList.add('hidden');
+      if (!modal) return;
+      if (isOpen) {
+        modal.classList.remove('hidden');
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function applyWeights() {
+      const wFoot = parseInt(document.getElementById('weight-foot').value) || 40;
+      const wComp = parseInt(document.getElementById('weight-comp').value) || 30;
+      const wRent = parseInt(document.getElementById('weight-rent').value) || 30;
+
+      document.getElementById('weight-foot-label').innerText = `${wFoot}%`;
+      document.getElementById('weight-comp-label').innerText = `${wComp}%`;
+      document.getElementById('weight-rent-label').innerText = `${wRent}%`;
+
+      const storeCount = (typeof currentTotalStores !== 'undefined' && currentTotalStores > 0) 
+        ? currentTotalStores 
+        : (typeof currentFilteredList !== 'undefined' && currentFilteredList.length > 0 ? currentFilteredList.length : 100);
+      
+      const footScore = Math.min(100, Math.max(30, Math.round(storeCount * 0.05 + 50)));
+      const compScore = Math.min(100, Math.max(20, Math.round(100 - (storeCount * 0.02))));
+      const rentScore = 75;
+
+      const totalWeight = wFoot + wComp + wRent;
+      const reCalculatedScore = Math.round(
+        (footScore * wFoot + compScore * wComp + rentScore * wRent) / totalWeight
+      );
+
+      // 종합 적합도 점수 갱신
+      const scoreBadge = document.getElementById('val-score') || 
+                         document.querySelector('[class*="font-black"][class*="text-emerald"]') ||
+                         document.querySelector('.text-emerald-500.font-black');
+      if (scoreBadge) {
+        scoreBadge.innerText = `${reCalculatedScore}점`;
+      }
+
+      // 5대 역량 레이더 차트 실시간 갱신
+      if (typeof radarChart !== 'undefined' && radarChart) {
+        radarChart.data.datasets[0].data = [
+          Math.min(95, Math.round(footScore * 0.9)),
+          Math.min(95, Math.round(footScore * (wFoot / 40))),
+          Math.min(95, Math.round(compScore * (wComp / 30))),
+          Math.min(95, Math.round(reCalculatedScore * 0.95)),
+          Math.min(95, Math.round(rentScore * (wRent / 30)))
+        ];
+        radarChart.update();
+      }
     }
 
     function updateWeights() {
@@ -1028,6 +1106,10 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
         if (typeof updateSingleDashboard === 'function') updateSingleDashboard(centerA);
       } else {
         if (typeof updateCompareDashboard === 'function') updateCompareDashboard(centerA, centerB);
+      }
+
+      if (typeof updateTopCategories === 'function') {
+        updateTopCategories();
       }
     }
 
@@ -1422,6 +1504,167 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     }
+
+    // [가중치 모달 제어 및 실시간 적합도 점수 재연산]
+    function openWeightModal() {
+      const modal = document.getElementById('weight-modal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeWeightModal() {
+      const modal = document.getElementById('weight-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function applyWeights() {
+      const wFoot = parseInt(document.getElementById('weight-foot').value) || 40;
+      const wComp = parseInt(document.getElementById('weight-comp').value) || 30;
+      const wRent = parseInt(document.getElementById('weight-rent').value) || 30;
+
+      document.getElementById('weight-foot-label').innerText = `${wFoot}%`;
+      document.getElementById('weight-comp-label').innerText = `${wComp}%`;
+      document.getElementById('weight-rent-label').innerText = `${wRent}%`;
+
+      // 현재 상권 데이터를 기반으로 정량 점수 재계산
+      const storeCount = currentTotalStores > 0 ? currentTotalStores : (currentFilteredList ? currentFilteredList.length : 100);
+      
+      // 유동인구 점수 (100점 만점 환산)
+      const footScore = Math.min(100, Math.max(30, Math.round(storeCount * 0.05 + 50)));
+      // 경쟁도 점수 (점포가 적당할수록 고득점, 과밀할수록 감점)
+      const compScore = Math.min(100, Math.max(20, Math.round(100 - (storeCount * 0.02))));
+      // 임대료 효율 점수
+      const rentScore = 75;
+
+      const totalWeight = wFoot + wComp + wRent;
+      const reCalculatedScore = Math.round(
+        (footScore * wFoot + compScore * wComp + rentScore * wRent) / totalWeight
+      );
+
+      // 1. 대시보드 종합 적합도 점수 엘리먼트 갱신
+      const scoreBadge = document.querySelector('.text-emerald-500.font-black') || 
+                         document.querySelector('.text-emerald-600.font-black') ||
+                         document.querySelector('[class*="font-black"][class*="text-emerald"]');
+      if (scoreBadge) {
+        scoreBadge.innerText = `${reCalculatedScore}점`;
+      }
+
+      // 2. 5대 역량 레이더 차트가 존재할 경우 데이터 즉시 갱신
+      if (typeof radarChart !== 'undefined' && radarChart) {
+        radarChart.data.datasets[0].data = [
+          Math.min(95, Math.round(footScore * 0.9)),
+          Math.min(95, Math.round(footScore * (wFoot / 40))),
+          Math.min(95, Math.round(compScore * (wComp / 30))),
+          Math.min(95, Math.round(reCalculatedScore * 0.95)),
+          Math.min(95, Math.round(rentScore * (wRent / 30)))
+        ];
+        radarChart.update();
+      }
+    }
+
+    // [키워드/주소 실시간 검색 및 상권 분석 자동 연동]
+    async function searchLocationKeyword() {
+      const inputEl = document.getElementById('location-search-input');
+      const keyword = inputEl ? inputEl.value.trim() : '';
+
+      if (!keyword) {
+        alert("분석할 지역명이나 건물명, 주소를 입력해주세요. (예: 홍대입구역, 성수동)");
+        return;
+      }
+
+      // OpenStreetMap Nominatim 무료 지오코더 (한국 지역 우선 검색)
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(keyword)}&countrycodes=kr&limit=1`;
+
+      try {
+        const res = await fetch(url, {
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+        const data = await res.json();
+
+        if (!data || data.length === 0) {
+          alert(`'${keyword}'에 대한 검색 결과를 찾을 수 없습니다. 명칭이나 지번/도로명을 다시 확인해주세요.`);
+          return;
+        }
+
+        const targetLat = parseFloat(data[0].lat);
+        const targetLng = parseFloat(data[0].lon);
+        const displayName = data[0].display_name;
+
+        // 1. 해당 좌표로 부드럽게 시점 이동 (FlyTo)
+        map.flyTo([targetLat, targetLng], 16, {
+          animate: true,
+          duration: 1.2
+        });
+
+        // 2. 단일 분석 모드 좌표(centerA) 갱신
+        centerA = [targetLat, targetLng];
+
+        // 3. 상단 안내 또는 권역 텍스트가 있다면 검색된 지명으로 표기
+        const guideEl = document.getElementById('guide-text');
+        if (guideEl) {
+          guideEl.innerText = `검색 이동: ${keyword} [${targetLat.toFixed(4)}, ${targetLng.toFixed(4)}]`;
+        }
+
+        // 4. 새 위치 기준으로 즉시 공공데이터 상권 분석 실행
+        setTimeout(() => {
+          updateView();
+        }, 500);
+
+      } catch (err) {
+        console.error("지오코딩 검색 에러:", err);
+        alert("주소 검색 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      }
+    }
+
+    // [현재 상권 내 상위 업종 TOP 5 랭킹 연산 및 렌더링]
+    function updateTopCategories() {
+      const container = document.getElementById('top-category-container');
+      if (!container) return;
+
+      if (!currentFilteredList || currentFilteredList.length === 0) {
+        container.innerHTML = `<div class="text-[11px] text-slate-400 text-center py-2">수신된 점포 데이터가 없습니다.</div>`;
+        return;
+      }
+
+      // 1. 업종별 개수 카운팅
+      const counts = {};
+      currentFilteredList.forEach(item => {
+        const cat = item.cat || '기타';
+        counts[cat] = (counts[cat] || 0) + 1;
+      });
+
+      // 2. 내림차순 정렬 후 상위 5개 추출
+      const sorted = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+
+      const totalCount = currentFilteredList.length;
+      const barColors = ['bg-blue-600', 'bg-indigo-500', 'bg-sky-500', 'bg-teal-500', 'bg-slate-400'];
+
+      // 3. 프로그레스 바 HTML 동적 생성
+      let html = '';
+      sorted.forEach(([catName, count], idx) => {
+        const percent = Math.round((count / totalCount) * 100);
+        const color = barColors[idx] || 'bg-slate-400';
+        html += `
+          <div>
+            <div class="flex justify-between items-center text-[11px] mb-1">
+              <span class="font-bold text-slate-700 flex items-center gap-1">
+                <span class="w-4 h-4 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[9px] font-black">${idx + 1}</span>
+                ${catName}
+              </span>
+              <span class="text-slate-500 text-[10px] font-medium">${count}개소 <b class="text-slate-800">(${percent}%)</b></span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+              <div class="${color} h-1.5 rounded-full transition-all duration-500" style="width: ${percent}%;"></div>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
   </script>
 
   <!-- [국토부 실거래가 및 창업 손익분기점(BEP) 시뮬레이터 모달] -->
@@ -1593,6 +1836,63 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
         </button>
         <button onclick="printReport()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 flex items-center gap-1.5 transition">
           🖨️ 인쇄 / PDF 다운로드
+        </button>
+      </div>
+
+    </div>
+  </div>
+  <!-- [상권 평가지표 가중치 커스텀 모달] -->
+  <div id="weight-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      
+      <!-- 헤더 -->
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <div>
+          <span class="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">평가 알고리즘 커스텀</span>
+          <h3 class="text-base font-black text-slate-800 mt-1">상권 분석 지표 가중치 설정</h3>
+        </div>
+        <button onclick="closeWeightModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold leading-none">✕</button>
+      </div>
+
+      <p class="text-xs text-slate-500 leading-relaxed">
+        업종 특성에 맞게 지표별 반영 비율을 조정하세요. 종합 적합도 점수와 5대 역량 차트가 실시간 재계산됩니다.
+      </p>
+
+      <!-- 슬라이더 목록 -->
+      <div class="space-y-3.5 bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <!-- 1. 유동인구 가중치 -->
+        <div>
+          <div class="flex justify-between text-xs text-slate-700 mb-1">
+            <span>배후 유동인구 (고객유입력)</span>
+            <b id="weight-foot-label" class="text-blue-600 font-bold">40%</b>
+          </div>
+          <input type="range" id="weight-foot" min="10" max="70" value="40" oninput="applyWeights()" class="w-full accent-blue-600 cursor-pointer h-1.5" />
+        </div>
+
+        <!-- 2. 경쟁 밀집도 가중치 -->
+        <div>
+          <div class="flex justify-between text-xs text-slate-700 mb-1">
+            <span>동종 점포 밀집도 (경쟁 회피)</span>
+            <b id="weight-comp-label" class="text-rose-600 font-bold">30%</b>
+          </div>
+          <input type="range" id="weight-comp" min="10" max="70" value="30" oninput="applyWeights()" class="w-full accent-rose-500 cursor-pointer h-1.5" />
+        </div>
+
+        <!-- 3. 임대료 및 시세 가중치 -->
+        <div>
+          <div class="flex justify-between text-xs text-slate-700 mb-1">
+            <span>임대 시세 효율성 (수익안정성)</span>
+            <b id="weight-rent-label" class="text-emerald-600 font-bold">30%</b>
+          </div>
+          <input type="range" id="weight-rent" min="10" max="70" value="30" oninput="applyWeights()" class="w-full accent-emerald-500 cursor-pointer h-1.5" />
+        </div>
+      </div>
+
+      <!-- 안내 및 닫기 버튼 -->
+      <div class="flex justify-between items-center pt-2">
+        <span class="text-[11px] text-slate-400">조작 즉시 대시보드에 반영됩니다.</span>
+        <button onclick="closeWeightModal()" class="px-5 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition">
+          확인
         </button>
       </div>
 
