@@ -7,6 +7,7 @@
   
   <!-- CSS 라이브러리 (Leaflet, MarkerCluster, Tailwind CDN) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <script src="https://cdn.tailwindcss.com"></script>
@@ -14,11 +15,10 @@
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
   
   <!-- JS 라이브러리 (Leaflet, MarkerCluster, Leaflet-Heat, Chart.js CDN) -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
+  
   <style>
     #map { height: 100%; min-height: 520px; z-index: 1; }
     @media print {
@@ -145,6 +145,21 @@
       <button onclick="filterCategory('패스트푸드')" id="cat-패스트푸드" class="cat-btn px-2.5 py-0.5 rounded-full font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">🍔 패스트푸드</button>
       <button onclick="filterCategory('소매/유통')" id="cat-소매/유통" class="cat-btn px-2.5 py-0.5 rounded-full font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">🏪 소매/편의점</button>
       <button onclick="filterCategory('일반주점/치킨')" id="cat-일반주점/치킨" class="cat-btn px-2.5 py-0.5 rounded-full font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">🍗 치킨/주점</button>
+      <!-- [그 외 기타 업종 선택 Selectbox] -->
+      <select 
+        id="other-category-select" 
+        onchange="selectOtherCategory(this.value)" 
+        class="px-3 py-1 rounded-full text-xs font-bold border border-slate-300 bg-white text-slate-700 hover:border-blue-400 focus:outline-none cursor-pointer transition"
+      >
+        <option value="">📂 그 외 업종 선택 ▾</option>
+        <option value="미용/뷰티">💇 미용·뷰티·네일</option>
+        <option value="학원/교육">📚 학원·교육·교습소</option>
+        <option value="병의원/약국">🏥 병의원·약국·한의원</option>
+        <option value="헬스/스포츠">🏋️ 헬스·필라테스·스포츠</option>
+        <option value="부동산/전문서비스">🏢 부동산·컨설팅·사무</option>
+        <option value="숙박/여가">🏨 숙박·PC방·노래방</option>
+        <option value="생활수리/세탁">🧺 세탁·수리·생활서비스</option>
+      </select>
     </div>
 
     <!-- 권역 바로가기 및 소스 상태 배지 -->
@@ -1045,7 +1060,14 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
               '한식/식사': ['한식', '백반', '국밥', '찌개', '고기', '식당', '분식', '중식', '일식', '서양', '음식'],
               '패스트푸드': ['패스트푸드', '버거', '피자', '샌드위치', '토스트', '김밥', '도시락'],
               '소매/편의점': ['소매', '편의점', '슈퍼', '마트', '잡화', '의류', '화장품', '약국', '문구'],
-              '치킨/주점': ['치킨', '호프', '주점', '맥주', '요리주점', '이자카야', '포장마차', '바']
+              '치킨/주점': ['치킨', '호프', '주점', '맥주', '요리주점', '이자카야', '포장마차', '바'],
+              '미용/뷰티': ['미용', '헤어', '네일', '피부', '에스테틱', '메이크업', '이용원', '뷰티'],
+              '학원/교육': ['학원', '교습', '어학', '입시', '태권도', '피아노', '미술', '교육', '독서실', '스터디'],
+              '병의원/약국': ['의원', '병원', '치과', '한의원', '약국', '피부과', '정형외과', '내과', '동물병원'],
+              '헬스/스포츠': ['헬스', '피트니스', '필라테스', '요가', '골프', '당구', '볼링', '체육', '스포츠'],
+              '부동산/전문서비스': ['부동산', '공인중개', '컨설팅', '세무', '법무', '회계', '광고', '디자인', '인테리어'],
+              '숙박/여가': ['호텔', '모텔', '게스트하우스', '숙박', 'PC방', '노래', '오락', '만화'],
+              '생활수리/세탁': ['세탁', '크린', '수선', '열쇠', '자동차수리', '카센터', '사진', '인쇄']
             };
 
             const keywords = categoryKeywords[selectedCat] || [selectedCat];
@@ -1235,46 +1257,73 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
         '한식/식사': { avgSales: 4120, rentFactor: 0.95, closeRate: '2.6% (안정)', stayTime: '46분', footRatio: 0.40 },
         '패스트푸드': { avgSales: 3890, rentFactor: 1.10, closeRate: '2.3% (낮음)', stayTime: '24분', footRatio: 0.25 },
         '소매/편의점': { avgSales: 4550, rentFactor: 1.05, closeRate: '1.8% (매우낮음)', stayTime: '12분', footRatio: 0.28 },
-        '치킨/주점': { avgSales: 3290, rentFactor: 0.85, closeRate: '3.9% (주의)', stayTime: '85분', footRatio: 0.22 }
+        '치킨/주점': { avgSales: 3290, rentFactor: 0.85, closeRate: '3.9% (주의)', stayTime: '85분', footRatio: 0.22 },
+        '미용/뷰티': { avgSales: 2950, rentFactor: 0.90, closeRate: '2.2% (낮음)', stayTime: '75분', footRatio: 0.20 },
+        '학원/교육': { avgSales: 4800, rentFactor: 0.80, closeRate: '1.9% (안정)', stayTime: '110분', footRatio: 0.25 },
+        '병의원/약국': { avgSales: 6400, rentFactor: 1.20, closeRate: '1.1% (최저)', stayTime: '38분', footRatio: 0.30 },
+        '헬스/스포츠': { avgSales: 4200, rentFactor: 0.75, closeRate: '2.8% (보통)', stayTime: '80분', footRatio: 0.18 },
+        '부동산/전문서비스': { avgSales: 3600, rentFactor: 0.85, closeRate: '2.4% (안정)', stayTime: '35분', footRatio: 0.15 },
+        '숙박/여가': { avgSales: 3900, rentFactor: 0.82, closeRate: '3.1% (보통)', stayTime: '120분', footRatio: 0.18 },
+        '생활수리/세탁': { avgSales: 2300, rentFactor: 0.78, closeRate: '1.6% (낮음)', stayTime: '15분', footRatio: 0.14 }
       };
 
       const profile = categoryProfiles[cat] || categoryProfiles['ALL'];
       const radiusFactor = (currentRadius || 500) / 500;
+      const totalAreaStores = currentTotalStores > 0 ? currentTotalStores : Math.max(displayCount, 50);
 
-      const dynamicFoot = Math.round((displayCount * 42 + 4500 * radiusFactor) * profile.footRatio);
-      const dynamicSales = Math.round(profile.avgSales + (displayCount * 0.4));
-      const dynamicRent = (18.4 * profile.rentFactor).toFixed(1);
-      const dynamicScore = Math.max(52, Math.min(96, 86 - (cat === 'ALL' ? 0 : Math.min(18, Math.floor(displayCount / 30)))));
+      // [1] 위치(위도·경도) 및 상권 밀집도 기반 입지 급지 계수 산출
+      // 서울 핵심 도심(강남/역삼/종로/중구/홍대 등)에 가까울수록 + 상권 점포 밀도가 높을수록 임대료와 유동이 상승
+      const distFromGangnam = map.distance(latlng, [37.4979, 127.0276]); // 강남역 기준 거리(m)
+      const distFromCityHall = map.distance(latlng, [37.5663, 126.9779]); // 시청/광화문 기준 거리(m)
+      const minCoreDist = Math.min(distFromGangnam, distFromCityHall);
+      
+      // 도심 접근성 보정 (0.75 ~ 1.35) + 미세 좌표 해시(골목별 차이 반영)
+      const coreProximityFactor = Math.max(0.75, Math.min(1.35, 1.35 - (minCoreDist / 35000)));
+      const densityFactor = Math.min(1.4, Math.max(0.7, totalAreaStores / (2500 * radiusFactor)));
+      const microLocOffset = ((Math.abs(Math.sin(latlng[0] * 1000 + latlng[1] * 1000)) - 0.5) * 0.12);
 
-      // [강화판] 띄어쓰기 무시 + 모든 부모/형제 구조에서 숫자 칸을 정확히 찾아 업데이트
+      // [2] 4대 핵심 지표 위치·밀도·업종 복합 동적 계산
+      const dynamicFoot = Math.round((displayCount * 42 + 4500 * radiusFactor * densityFactor) * profile.footRatio);
+      const dynamicSales = Math.round(profile.avgSales * (0.7 + 0.3 * densityFactor + microLocOffset) + (displayCount * 0.35));
+      
+      // ① 평당 임대료: 기준 임대료(14.5만원) × 도심입지계수 × 상권밀도 × 업종계수
+      const rawRent = 14.5 * coreProximityFactor * (0.75 + 0.25 * densityFactor) * profile.rentFactor * (1 + microLocOffset);
+      const dynamicRent = Math.max(6.5, Math.min(35.0, rawRent)).toFixed(1);
+
+      // ② 최근 폐업률: 업종 기본 폐업률에 과밀 경쟁도(점포 수) 및 위치 편차 반영
+      const baseCloseNum = parseFloat(profile.closeRate) || 2.5;
+      const competitionStress = (displayCount / (450 * radiusFactor)) * 0.85; // 경쟁 점포가 많을수록 폐업률 소폭 상승
+      const rawClose = Math.max(0.8, Math.min(7.5, baseCloseNum * 0.75 + competitionStress + (microLocOffset * 3)));
+      const closeLabel = rawClose < 2.2 ? '낮음' : (rawClose < 3.4 ? '보통' : '주의');
+      const dynamicCloseRate = `${rawClose.toFixed(1)}% (${closeLabel})`;
+
+      // ③ 고객 체류시간: 업종 기본 체류시간에 상권 밀도(복합 상권일수록 체류 증가) 및 위치 편차 반영
+      const baseStayMin = parseInt(profile.stayTime, 10) || 42;
+      const dynamicStayMin = Math.max(8, Math.round(baseStayMin * (0.85 + 0.2 * densityFactor + microLocOffset)));
+      const dynamicStayTime = `${dynamicStayMin}분`;
+
+      const dynamicScore = Math.max(52, Math.min(96, Math.round(84 + (coreProximityFactor - 1) * 15 - (cat === 'ALL' ? 0 : Math.min(16, Math.floor(displayCount / 30))))));
+
+      // [3] 화면 카드 수치 일괄 업데이트 (함수 정의 포함)
       const updateCardValue = (keyword, newValue) => {
-        const allElements = document.querySelectorAll('div, p, span, dt, th, td');
-        allElements.forEach(el => {
-          // 자식이 없는 순수 텍스트 노드만 검사 (공백 제거 후 비교)
-          if (el.children.length === 0) {
-            const cleanText = el.innerText.replace(/\s+/g, '');
-            if (cleanText === keyword) {
-              // 1) 바로 다음 형제 요소가 값인 경우
-              if (el.nextElementSibling) {
-                el.nextElementSibling.innerText = newValue;
-              } 
-              // 2) 부모 박스 안의 두 번째 자식이 값인 경우
-              else if (el.parentElement && el.parentElement.children.length >= 2) {
-                el.parentElement.children[1].innerText = newValue;
-              }
+        document.querySelectorAll('div, p, span, dt, th, td').forEach(el => {
+          if (el.children.length === 0 && el.innerText.replace(/\s+/g, '') === keyword) {
+            if (el.nextElementSibling) {
+              el.nextElementSibling.innerText = newValue;
+            } else if (el.parentElement && el.parentElement.children.length >= 2) {
+              el.parentElement.children[1].innerText = newValue;
             }
           }
         });
       };
 
-      // 공백을 모두 제거한 키워드로 매칭하므로 띄어쓰기가 달라도 무조건 작동함
       updateCardValue('영역내점포수', `${displayCount.toLocaleString()}개`);
       updateCardValue('일평균유동인구', `${dynamicFoot.toLocaleString()}명`);
       updateCardValue('종합적합도', `${dynamicScore}점`);
       updateCardValue('추정월매출', `${dynamicSales.toLocaleString()}만원`);
       updateCardValue('평당임대료', `${dynamicRent}만원`);
-      updateCardValue('최근폐업률', profile.closeRate);
-      updateCardValue('고객체류시간', profile.stayTime);
+      updateCardValue('최근폐업률', dynamicCloseRate);
+      updateCardValue('고객체류시간', dynamicStayTime);
 
       // 테이블 바인딩
       const tbody = document.getElementById('store-table-body');
@@ -2054,6 +2103,27 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 
     // 페이지 로드 시 저장된 스냅샷 개수 배지 동기화
     window.addEventListener('DOMContentLoaded', updateSnapshotBadge);
+
+    // 1. 그 외 업종 <select> 변경 시 호출
+    function selectOtherCategory(val) {
+      if (!val) return;
+      selectedCat = val;
+
+      // 기존 5개+전체보기 버튼의 활성 스타일(파란 테두리) 초기화
+      document.querySelectorAll('.cat-btn, [onclick^="setCategory"]').forEach(btn => {
+        btn.classList.remove('border-blue-500', 'bg-blue-50', 'text-blue-700', 'ring-1', 'ring-blue-500');
+        btn.classList.add('border-slate-200', 'bg-slate-50', 'text-slate-600');
+      });
+
+      // 드롭다운(select) 자체에 활성 하이라이트 적용
+      const sel = document.getElementById('other-category-select');
+      if (sel) {
+        sel.classList.remove('border-slate-300', 'bg-white', 'text-slate-700');
+        sel.classList.add('border-blue-500', 'bg-blue-50', 'text-blue-700', 'ring-1', 'ring-blue-500');
+      }
+
+      if (typeof updateView === 'function') updateView();
+    }
   </script>
 
   <!-- [국토부 실거래가 및 창업 손익분기점(BEP) 시뮬레이터 모달] -->
