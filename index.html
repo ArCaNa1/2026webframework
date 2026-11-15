@@ -109,6 +109,14 @@
       <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-500 px-2 py-1 rounded text-[11px] font-bold text-white whitespace-nowrap shrink-0">
         📄 리포트
       </button>
+      <!-- 관심 상권 스냅샷 저장 & 비교 버튼 -->
+      <button onclick="saveCurrentSnapshot()" class="bg-amber-600 hover:bg-amber-500 px-2 py-1 rounded text-[11px] font-bold text-white whitespace-nowrap shrink-0 transition">
+        📌 스냅샷 저장
+      </button>
+      <button onclick="openSnapshotCompareModal()" class="bg-indigo-600 hover:bg-indigo-500 px-2 py-1 rounded text-[11px] font-bold text-white whitespace-nowrap shrink-0 transition flex items-center gap-1">
+        <span>📊 후보 비교</span>
+        <span id="snapshot-badge" class="bg-white text-indigo-700 text-[10px] font-black px-1.5 rounded-full">0</span>
+      </button>
 
       <!-- 지명/주소 검색창 -->
       <div class="flex items-center bg-slate-800 border border-slate-700 rounded overflow-hidden shrink-0">
@@ -1916,6 +1924,136 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
         }).bindTooltip("⚡ 실제 도로망 기준 도보 5분 핵심 상권", { sticky: true }).addTo(isochroneLayerGroup);
       }
     }
+
+    // =========================================================
+    // [관심 상권 스냅샷 저장 및 다중 후보지 비교 엔진]
+    // =========================================================
+    function getSavedSnapshots() {
+      try {
+        return JSON.parse(localStorage.getItem('biz_compass_snapshots') || '[]');
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function updateSnapshotBadge() {
+      const badge = document.getElementById('snapshot-badge');
+      if (badge) badge.innerText = getSavedSnapshots().length;
+    }
+
+    // 현재 화면의 상권 진단 데이터를 스냅샷으로 저장
+    function saveCurrentSnapshot() {
+      const snapshots = getSavedSnapshots();
+      if (snapshots.length >= 4) {
+        alert('최대 4개의 후보 상권까지 비교할 수 있습니다. 기존 스냅샷을 삭제 후 저장해주세요.');
+        return;
+      }
+
+      const titleEl = document.querySelector('h2') || document.getElementById('coordinate-info');
+      const regionName = prompt(
+        '저장할 후보 상권의 별칭을 입력하세요 (예: 홍대입구역 카페, 성수동 메인거리):',
+        titleEl ? titleEl.innerText.split('\n')[0].trim() : `후보 상권 #${snapshots.length + 1}`
+      );
+      if (!regionName) return;
+
+      const getCardVal = (keyword, fallback) => {
+        let found = fallback;
+        document.querySelectorAll('div, p, span').forEach(el => {
+          if (el.children.length === 0 && el.innerText.replace(/\s+/g, '') === keyword && el.nextElementSibling) {
+            found = el.nextElementSibling.innerText.trim();
+          }
+        });
+        return found;
+      };
+
+      const snapshot = {
+        id: Date.now(),
+        name: regionName,
+        category: (typeof selectedCat !== 'undefined' && selectedCat !== 'ALL') ? selectedCat : '전체 업종',
+        radius: `${typeof currentRadius !== 'undefined' ? currentRadius : 500}m`,
+        stores: getCardVal('영역내점포수', '-'),
+        footTraffic: getCardVal('일평균유동인구', '-'),
+        score: getCardVal('종합적합도', '84점'),
+        sales: getCardVal('추정월매출', '-'),
+        rent: getCardVal('평당임대료', '-'),
+        stayTime: getCardVal('고객체류시간', '-')
+      };
+
+      snapshots.push(snapshot);
+      localStorage.setItem('biz_compass_snapshots', JSON.stringify(snapshots));
+      updateSnapshotBadge();
+      alert(`✅ [${regionName}] 상권 스냅샷이 저장되었습니다! (현재 ${snapshots.length}개 저장됨)`);
+    }
+
+    // 비교 모달 열기
+    function openSnapshotCompareModal() {
+      const modal = document.getElementById('snapshot-modal');
+      const body = document.getElementById('snapshot-compare-body');
+      const snapshots = getSavedSnapshots();
+
+      if (!modal || !body) return;
+
+      if (snapshots.length === 0) {
+        body.innerHTML = `
+          <div class="text-center py-12 text-slate-500">
+            <p class="text-base font-bold mb-1">저장된 후보 상권이 없습니다.</p>
+            <p class="text-xs">지도에서 원하는 역이나 지역을 검색한 뒤 상단의 <b>[📌 스냅샷 저장]</b> 버튼을 눌러보세요.</p>
+          </div>
+        `;
+      } else {
+        body.innerHTML = `
+          <div class="grid grid-cols-1 md:grid-cols-${Math.min(snapshots.length, 3)} gap-4">
+            ${snapshots.map((s, idx) => `
+              <div class="bg-slate-50 rounded-xl p-5 border border-slate-200 flex flex-col justify-between relative">
+                <div>
+                  <div class="flex justify-between items-start mb-2">
+                    <span class="bg-indigo-100 text-indigo-700 text-[11px] font-extrabold px-2 py-0.5 rounded">후보 0${idx + 1} · ${s.category}</span>
+                    <button onclick="deleteSnapshot(${s.id})" class="text-xs text-slate-400 hover:text-rose-600 font-bold">삭제</button>
+                  </div>
+                  <h4 class="text-base font-black text-slate-900 mb-1">${s.name}</h4>
+                  <p class="text-xs text-slate-500 mb-4">분석 반경: ${s.radius}</p>
+                  <div class="space-y-2.5 text-xs border-t border-slate-200 pt-3">
+                    <div class="flex justify-between"><span class="text-slate-500">종합 적합도</span><b class="text-emerald-600 text-sm">${s.score}</b></div>
+                    <div class="flex justify-between"><span class="text-slate-500">영역 내 점포 수</span><b class="text-blue-600">${s.stores}</b></div>
+                    <div class="flex justify-between"><span class="text-slate-500">일평균 유동인구</span><b class="text-slate-800">${s.footTraffic}</b></div>
+                    <div class="flex justify-between"><span class="text-slate-500">추정 월매출</span><b class="text-slate-900">${s.sales}</b></div>
+                    <div class="flex justify-between"><span class="text-slate-500">평당 임대료</span><b class="text-slate-800">${s.rent}</b></div>
+                    <div class="flex justify-between"><span class="text-slate-500">고객 체류시간</span><b class="text-indigo-600">${s.stayTime}</b></div>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeSnapshotModal() {
+      const modal = document.getElementById('snapshot-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    function deleteSnapshot(id) {
+      const filtered = getSavedSnapshots().filter(s => s.id !== id);
+      localStorage.setItem('biz_compass_snapshots', JSON.stringify(filtered));
+      updateSnapshotBadge();
+      openSnapshotCompareModal();
+    }
+
+    function clearAllSnapshots() {
+      localStorage.removeItem('biz_compass_snapshots');
+      updateSnapshotBadge();
+      openSnapshotCompareModal();
+    }
+
+    // 페이지 로드 시 저장된 스냅샷 개수 배지 동기화
+    window.addEventListener('DOMContentLoaded', updateSnapshotBadge);
   </script>
 
   <!-- [국토부 실거래가 및 창업 손익분기점(BEP) 시뮬레이터 모달] -->
@@ -2147,6 +2285,24 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
         </button>
       </div>
 
+    </div>
+  </div>
+  <!-- [관심 상권 스냅샷 다중 비교 모달] -->
+  <div id="snapshot-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[2000] hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden border border-slate-200">
+      <div class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
+        <div>
+          <span class="text-xs font-bold text-indigo-400 tracking-wider">MULTI-LOCATION BENCHMARK</span>
+          <h3 class="text-lg font-extrabold">📌 저장된 창업 후보 상권 다중 비교</h3>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="clearAllSnapshots()" class="text-xs bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-lg font-bold">전체 삭제</button>
+          <button onclick="closeSnapshotModal()" class="text-slate-400 hover:text-white text-xl font-bold px-2">&times;</button>
+        </div>
+      </div>
+      <div id="snapshot-compare-body" class="p-6 max-h-[70vh] overflow-y-auto">
+        <!-- JS로 비교 카드 동적 생성 -->
+      </div>
     </div>
   </div>
 </body>
